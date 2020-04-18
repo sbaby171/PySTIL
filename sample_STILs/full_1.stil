@@ -1,0 +1,199 @@
+STIL 1.0 {
+  DCLevels 2002;
+  Design D22;
+}
+
+Header {
+   Title "Full 74act299 Example for STIL Reader";
+   Date "Mon Aug 29 08:00:00 2005";
+   Source "Hand Generated";
+   History {
+      Ann {* Mon Aug 29 08:00:00 2005 -- Initial Revision *}
+   }
+}
+
+Signals {
+  CP 	   In;
+  MR 	   In;
+  S0 	   In;
+  S1 	   In;
+  D0 	   In  {ScanIn;}
+  D7 	   In;
+  Q0 	   Out;
+  Q7 	   Out {ScanOut;}
+  IO[0..7] InOut;
+  Vcc 	   Supply;
+  Gnd      Supply;
+}
+
+SignalGroups {
+  AllIn     = 'CP + MR + S0 + S1 + D0 + D7';
+  AllOut    = 'Q0 + Q7';
+  Bus       = 'IO[0..7]';
+  AllSigs   = 'AllIn + AllOut + Bus';
+}
+
+Environment {
+
+  NameMaps "93kChannel:TrainingClassLB" {
+    Signals {
+        CP      "10102,Pin 12";
+        D7      "10108,Pin 18";
+        D0      "10101,Pin 11";
+        IO[0]   "10114,Pin 7";
+        IO[1]   "10103,Pin 13";
+        IO[2]   "10113,Pin 6";
+        IO[3]   "10104,Pin 14";
+        IO[4]   "10112,Pin 5";
+        IO[5]   "10105,Pin 15";
+        IO[6]   "10111,Pin 4";
+        IO[7]   "10106,Pin 16";
+        Q0      "10115,Pin 8";
+        Q7      "10107,Pin 17";
+        S0      "10110,Pin 1";
+        S1      "10109,Pin 19";
+        MR      "10116,Pin 9";
+        Vcc     "11,Pin 20";
+        Gnd     "12,Pin 21";
+    }
+  }
+
+  NameMaps "93kChannel:Bench" {
+    Signals {
+        CP      "10108,Pin 12";
+        D7      "10107,Pin 18";
+        D0      "10109,Pin 11";
+        IO[0]   "10113,Pin 7";
+        IO[1]   "10101,Pin 13";
+        IO[2]   "10115,Pin 6";
+        IO[3]   "10105,Pin 14";
+        IO[4]   "10116,Pin 5";
+        IO[5]   "10102,Pin 15";
+        IO[6]   "10114,Pin 4";
+        IO[7]   "10103,Pin 16";
+        Q0      "10111,Pin 8";
+        Q7      "10104,Pin 17";
+        S0      "10110,Pin 1";
+        S1      "10106,Pin 19";
+        MR      "10112,Pin 9";
+        Vcc     "14,Pin 20";
+        Gnd     "15,Pin 21";
+    }
+  }
+}
+
+Spec Spec1 {
+  Category Cat1 {
+    per         {Min '50ns';    Max '200ns';    Typ '100ns';    }
+    vcc         {Min '4.5V';    Max '5.5V';     Typ '5.0V';     }
+    gnd         {Min '-.5V';    Max '0.5V';     Typ '0.0V';     }
+    iccmax      {Min '100mA';   Max '400mA';    Typ '200mA';    }
+    vih         {Min '3.5V';    Max '5.5V';     Typ '4.8V';     }
+    vil         {Min '0V';      Max '1.0V';     Typ '0V';       }
+    voh         {Min '2.6V';    Max '5.4V';     Typ '2.8V';     }
+    vol         {Min '0V';      Max '2.4V';     Typ '2.2V';     }
+    iol         {Min '2mA';     Max '10mA';     Typ '6mA';      }
+    ioh         {Min '2mA';     Max '10mA';     Typ '6mA';      }
+    vl_clamp    {Typ '-1.0V'; }
+    vh_clamp    {Typ '6.0V'; }
+    term_Iol    {Typ '0.0mA'; }
+    term_Ioh    {Typ '0.0mA'; }
+    res_term    {Typ '20Ohm'; }
+    vterm       {Typ '1.2V'; }
+    vcom        {Typ '100mV';}
+  }
+}
+
+DCLevels DCL1 {
+  Vcc     { VForce 'vcc'; IClamp 'iccmax'; ResistiveTermination 'res_term'; TermVRef 'vterm';}
+  AllIn   { VIH 'vih'; VIL 'vil'; ClampHi 'vh_clamp'; ClampLo 'vl_clamp'; }
+  AllOut  { VOL 'vol'; VOH 'voh'; IOH 'ioh'; IOL 'iol'; ClampHi 'vh_clamp'; ClampLo 'vl_clamp'; 
+            LoadVRef 'vcom'; }
+  Bus     { VIL 'vil'; VIH 'vih'; VOL 'vol'; VOH 'voh'; IOH 'ioh'; IOL 'iol'; ClampHi 'vh_clamp'; ClampLo 'vl_clamp';
+            LoadVRef 'vcom'; }
+}
+
+Selector Sel1 {
+  per           Typ;
+  vcc           Typ;
+  gnd           Typ;
+  iclamp        Typ;
+  vih           Typ;
+  vil           Typ;
+  voh           Typ;
+  vol           Typ;
+  vl_clamp	Typ;
+  vh_clamp	Typ;
+  term_Iol	Typ;
+  term_Ioh	Typ;
+  res_term	Typ;
+  term_vref	Typ;
+}
+
+Timing {
+  WaveformTable WavTbl1 {
+    Period 'per';
+    Waveforms {
+        CP      { P  { '0ns' D; 'per/2' U; } }
+        MR      { 01 { '0ns' D/U; 'per/5' U; } }
+        S0      { 01 { '0ns' D/U; } }
+        S1      { 01 { '0ns' D/U; } }
+        D0      { 01 { '0ns' D/U; } }
+        D7      { 01 { '0ns' D/U; } }
+        Q0      { LH { '0ns' X; 'per*4/5' L/H; } }
+        Q7      { LH { '0ns' X; 'per*4/5' L/H; } }
+        IO[0..7] { 01 { 'per/3' D/U; }
+                   LH { '0ns' X; 'per*4/5' L/H; } }
+    }
+  }
+}
+
+PatternBurst Burst1 {
+  PatList {
+    Pat1;
+  }
+}
+
+PatternExec {
+  Selector 	Sel1;
+  Category 	Cat1;
+  DCLevels 	DCL1;
+  PatternBurst 	Burst1;
+}
+
+Pattern Pat1 { 
+  W WavTbl1;
+  Ann {* Reset *}
+  V { CP=P; MR=0; S1=0; S0=0; D0=0; D7=0; Q0=L; Q7=L; }  // Vec 0
+  Ann {* Hold 00000000 *}
+  V { CP=P; MR=1; Q0=L; Q7=L; Bus=LLLLLLLL; }            // Vec 1
+  Ann {* Hold 00000000 *}
+  V { }                                                  // Vec 2
+  Ann {* Hold 00000000 *}
+  V { }                                                  // Vec 3
+  Ann {* Load 11001111 *}
+  V { CP=P; S1=1; S0=1; Q0=H; Q7=H; Bus=11001111; }      // Vec 4
+  Ann {* Hold 11001111 *}
+  V { CP=P; S1=0; S0=0; Q0=H; Q7=H; Bus=11001111; }      // Vec 5
+  Ann {* Reset *}
+  V { CP=P; MR=0; S1=0; S0=0; D0=0; D7=0; Q0=L; Q7=L; }  // Vec 6
+  Ann {* Load 11111111 *}
+  V { CP=P; S1=1; S0=1; Q0=H; Q7=H; Bus=HHHHHHHH; }      // Vec 7
+  Ann {* Shift 0R *}
+  V { CP=P;       Q0=L; Q7=H; Bus=LHHHHHHH; }            // Vec 8
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHHHHHH; }            // Vec 9
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHHHHH; }            // Vec 10
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHLHHHH; }            // Vec 11
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHLHHH; }            // Vec 12
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHLHLHH; }            // Vec 13
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHLHLH; }            // Vec -14
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=L; Bus=HLHLHLHL; }            // Vec 15
+
+}

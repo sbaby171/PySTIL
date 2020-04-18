@@ -1,0 +1,91 @@
+STIL 1.0 ;
+// Inline comment
+/* inline block comment */
+/*
+Comment "taking" up 
+many 
+lines. */
+
+Header {
+   Title "Simple 74act299 Example for STIL Reader";
+   Date "Mon Aug 29 08:00:00 2005";
+   Source "Hand Generated";
+   History {
+      Ann {* Mon Aug 29 08:00:00 2005 -- Initial Revision *}
+   }
+}
+
+Signals {
+  CP In; MR In; S0 In; S1 In; D0 In {ScanIn;} D7 In;
+  Q0 Out; Q7 Out {ScanOut;} IO[0..7] InOut;
+}
+
+SignalGroups {
+  Bus = 'IO[0..7]';
+}
+
+Timing {
+  WaveformTable WavTbl1 {
+    Period '100ns';
+    Waveforms {
+	CP 	{ P  { '0ns' D;   '50ns' U; } }
+	MR 	{ 01 { '0ns' D/U; '20ns' U; } }
+	S0	{ 01 { '0ns' D/U; } }
+	S1	{ 01 { '0ns' D/U; } }
+	D0	{ 01 { '0ns' D/U; } }
+	D7	{ 01 { '0ns' D/U; } }
+	Q0 	{ LH { '80ns' L/H; } }
+	Q7 	{ LH { '80ns' L/H; } }
+	Bus     { 01 { '30ns' D/U; } 
+	          LH { '80ns' L/H; } }
+    }
+  }
+}
+
+PatternBurst Burst1 {
+  PatList {
+    Pat1;
+  }
+}
+
+PatternExec Exec1 {
+  PatternBurst Burst1;
+}
+
+
+Pattern Pat1 { 
+  W WavTbl1;
+  Ann {* Reset *}
+  V { CP=P; MR=0; S1=0; S0=0; D0=0; D7=0; Q0=L; Q7=L; }  // Vec 0
+  Ann {* Hold 00000000 *}
+  V { CP=P; MR=1; Q0=L; Q7=L; Bus=LLLLLLLL; }            // Vec 1
+  Ann {* Hold 00000000 *}
+  V { }                                                  // Vec 2
+  Ann {* Hold 00000000 *}
+  V { }                                                  // Vec 3
+  Ann {* Load 11001111 *}
+  V { CP=P; S1=1; S0=1; Q0=H; Q7=H; Bus=11001111; }      // Vec 4
+  Ann {* Hold 11001111 *}
+  V { CP=P; S1=0; S0=0; Q0=H; Q7=H; Bus=11001111; }      // Vec 5
+  Ann {* Reset *}
+  V { CP=P; MR=0; S1=0; S0=0; D0=0; D7=0; Q0=L; Q7=L; }  // Vec 6
+  Ann {* Load 11111111 *}
+  V { CP=P; S1=1; S0=1; Q0=H; Q7=H; Bus=HHHHHHHH; }      // Vec 7
+  Ann {* Shift 0R *}
+  V { CP=P;       Q0=L; Q7=H; Bus=LHHHHHHH; }            // Vec 8
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHHHHHH; }            // Vec 9
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHHHHH; }            // Vec 10
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHLHHHH; }            // Vec 11
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHLHHH; }            // Vec 12
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=H; Bus=HLHLHLHH; }            // Vec 13
+  Ann {* Shift 0R *}
+  V { CP=P; D0=0; Q0=L; Q7=H; Bus=LHLHLHLH; }            // Vec -14
+  Ann {* Shift 1R *}
+  V { CP=P; D0=1; Q0=H; Q7=L; Bus=HLHLHLHL; }            // Vec 15
+
+}

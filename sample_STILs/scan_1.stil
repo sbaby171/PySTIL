@@ -1,0 +1,241 @@
+STIL 1.0 {
+  DCLevels 2002;
+  Design D22;
+}
+
+Header {
+   Title "74act299 Example for Scan Tests";
+   Date "Tue Aug 22 08:00:00 2006";
+   Source "Hand Generated";
+   History {
+      Ann {* Tue Aug 22 08:00:00 2006 -- Initial Revision *}
+   }
+}
+
+Signals {
+  CP       In;
+  MR       In;
+  S0       In;
+  S1       In;
+  D0       In  {ScanIn;}
+  D7       In;
+  Q0       Out;
+  Q7       Out {ScanOut;}
+  IO[0..7] InOut;
+  Vcc      Supply;
+}
+
+SignalGroups {
+  AllIn = 'CP + MR + S0 + S1 + D0 + D7';
+  AllOut = 'Q0 + Q7';
+  AllIO = 'IO[0..7]';
+  AllSigs = 'AllIn + AllOut + AllIO';
+  si = 'D0' { ScanIn 7; }
+  so = 'Q7' { ScanOut 7; }
+}
+
+Environment {
+
+  NameMaps "93kChannel:TrainingClassLB" {
+    Signals {
+	CP	"10102,Pin 12";
+	D7	"10108,Pin 18";
+	D0	"10101,Pin 11";
+	IO[0]	"10114,Pin 7";
+	IO[1]	"10103,Pin 13";
+	IO[2]	"10113,Pin 6";
+	IO[3]	"10104,Pin 14";
+	IO[4]	"10112,Pin 5";
+	IO[5]	"10105,Pin 15";
+	IO[6]	"10111,Pin 4";
+	IO[7]	"10106,Pin 16";
+	Q0	"10115,Pin 8";
+	Q7	"10107,Pin 17";
+	S0	"10110,Pin 1";
+	S1	"10109,Pin 19";
+	MR	"10116,Pin 9";
+	Vcc	"11,Pin 20";
+    }
+  }
+
+  NameMaps "93kChannel:Bench" {
+    Signals {
+	CP	"10108,Pin 12";
+	D7	"10107,Pin 18";
+	D0	"10109,Pin 11";
+	IO[0]	"10113,Pin 7";
+	IO[1]	"10101,Pin 13";
+	IO[2]	"10115,Pin 6";
+	IO[3]	"10105,Pin 14";
+	IO[4]	"10116,Pin 5";
+	IO[5]	"10102,Pin 15";
+	IO[6]	"10114,Pin 4";
+	IO[7]	"10103,Pin 16";
+	Q0	"10111,Pin 8";
+	Q7	"10104,Pin 17";
+	S0	"10110,Pin 1";
+	S1	"10106,Pin 19";
+	MR	"10112,Pin 9";
+	Vcc	"14,Pin 20";
+    }
+  }
+}
+
+Spec Spec1 {
+  Category Cat1 {
+    per		{Min '50ns';	Max '200ns';	Typ '100ns';	}
+    vcc         {Min '4.5V';    Max '5.5V';     Typ '5.0V';     }
+    gnd         {Min '-0.5V';   Max '0.5V';     Typ '0.0V';     }
+    iccmax      {Min '100mA';   Max '400mA';    Typ '200mA';    }
+    vih         {Min '3.5V';    Max '5.5V';     Typ '4.8V';     }
+    vil         {Min '0V';      Max '1.0V';     Typ '0V';       }
+    voh         {Min '2.6V';    Max '5.4V';     Typ '2.8V';     }
+    vol         {Min '0V';      Max '2.4V';     Typ '2.2V';     }
+    vl_clamp    {Typ '-1.0V'; }
+    vh_clamp    {Typ '6.0V'; }
+    term_lev	{Typ '2.0V'; }
+    term_Iol    {Typ '0.0mA'; }
+    term_Ioh    {Typ '0.0mA'; }
+  }
+}
+
+DCLevels DCL1 {
+  Vcc     { VForce 'vcc'; IClamp 'iccmax'; }
+  AllIn   { VIH 'vih'; VIL 'vil'; }
+  AllOut  { VOL 'vol'; VOH 'voh'; }
+  AllIO   { VIL 'vil'; VIH 'vih'; VOL 'vol'; VOH 'voh'; }
+}
+
+Selector Sel1 {
+  per		Typ;
+  vcc           Max;
+  iclamp        Typ;
+  vih           Min;
+  vil           Typ;
+  voh           Typ;
+  vol           Typ;
+}
+
+Timing {
+
+  WaveformTable wt1 {
+    Period 'per';
+    Waveforms {
+	CP 	{ 01 { '0ns' D; 'per/2' D/U; } }
+	MR 	{ 01 { '0ns' D/U; 'per/5' U; } }
+	S0	{ 01 { '0ns' D/U; } }
+	S1	{ 01 { '0ns' D/U; } }
+	D0	{ 01 { '0ns' D/U; } }
+	D7	{ 01 { '0ns' D/U; } }
+	Q0 	{ LH { '0ns' X; 'per*4/5' L/H; } }
+	Q7 	{ LH { '0ns' X; 'per*4/5' L/H; } }
+	IO[0..7] { 01 { 'per/3' D/U; } 
+		   LH { '0ns' X; 'per*4/5' L/H; } }
+		   
+    }
+  }
+
+  WaveformTable wt2 {
+    Period 'per';
+    Waveforms {
+        CP      { 01 { '0ns' D; 'per/2+2ns' D/U; } }
+	so 	{ LH { '0ns' X; 'per*4/5+2ns' L/H; } }
+	MR 	{ 01 { '0ns' D/U; 'per/5' U; } }
+	S0	{ 01 { '0ns' D/U; } }
+	S1	{ 01 { '0ns' D/U; } }
+	si	{ 01 { '2ns' D/U; } }
+	D7	{ 01 { '0ns' D/U; } }
+	Q0 	{ LH { '0ns' X; 'per*4/5' L/H; } }
+	IO[0..7] { 01 { 'per/3' D/U; } 
+		   LH { '0ns' X; 'per*4/5' L/H; } }
+    }
+  }
+
+}
+
+ScanStructures {
+  ScanChain sc1 {
+    ScanLength 7;
+    ScanIn D0;
+    ScanOut Q7;
+    ScanMasterClock CP;
+    ScanInversion 0;
+    ScanCells I00 IO1 IO2 IO3 IO4 IO5 IO6; 
+  }
+}
+
+PatternBurst PB1 {
+  PatList { 
+   ScanPass;
+   ScanFail;
+  }
+}
+
+PatternExec Test1Exec {
+  Selector Sel1;
+  Category Cat1;
+  DCLevels DCL1;
+  PatternBurst PB1;
+}
+
+Procedures {
+  LoadUnload { 
+    W wt2;
+    Shift { V { CP=1; si=#; so=#; } } 
+  }
+  capture { 
+    W wt2;
+    V { S0=0; S1=0; }
+  }
+}
+
+
+MacroDefs {
+  Reset { 
+   Reset:	V { AllIn=100000; }
+   HoldState: 	V { AllIn=110000; AllOut=LL; AllIO=\r8 L; } 
+  }
+}
+
+Pattern ScanPass { 
+  W wt1;
+  Reset: 
+	Macro Reset;
+  Ann {* Next 5 load/unload sequences pass. *}
+  Pattern0: 
+	Call LoadUnload { si=1111111; so=LLLLLLL; } 
+	Call capture;
+  Pattern1: 
+	Call LoadUnload { si=0011111; so=HHHHHHH; } 
+	Call capture;
+  Pattern2: 
+	Call LoadUnload { si=1110000; so=LLHHHHH; } 
+	Call capture;
+  Pattern3: 
+	Call LoadUnload { si=1010101; so=HHHLLLL; } 
+	Call capture;
+  Pattern4: 
+	Call LoadUnload { si=1010101; so=HLHLHLH; } 
+	Call capture;
+}
+
+Pattern ScanFail{ 
+  W wt1;
+  Reset: 
+	Macro Reset;
+  Ann {* Next 5 load/unload sequences fail. *}
+  FailOffset_0:		
+	Call LoadUnload { si=1111111; so=LLHLHLH; } 
+	Call capture;
+  FailOffset_6:		
+	Call LoadUnload { si=0011111; so=HHHHHHL; } 
+	Call capture;
+  FailOffsets_456: 	
+	Call LoadUnload { si=1110000; so=LLHHLLL; } 
+	Call capture;
+  FailOffset_01: 	
+	Call LoadUnload { si=1010101; so=LLHLLLL; } 
+	Call capture;
+  FailOffset_345:	
+	Call LoadUnload { si=0000000; so=HLHHLHL; } 
+}
