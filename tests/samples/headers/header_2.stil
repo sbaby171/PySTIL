@@ -1,0 +1,9 @@
+// This example contains the same contents of 'header_1' however, the 
+// syntax is very poor, but valid.  
+
+STIL 1.0; 
+
+Header{Title "Sample STIL Title";Date "Tue Apr 28 12:23:48 EST 1996"; 
+Source "VHDL simulation on April 22, 1996";History {Ann
+{* rev1 - 4/21/96 - made some change *}
+Ann {* rev2- 4/22/96 - made it work *}}}
