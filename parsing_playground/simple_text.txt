@@ -25,3 +25,7 @@ Signals {
   }
   IO[0..7] InOut;
 }
+
+SignalGroups quality {
+  Bus = 'IO[0..7]';
+}

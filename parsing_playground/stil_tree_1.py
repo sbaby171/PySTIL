@@ -76,12 +76,59 @@ class Signals(object):
     def __str__(self): 
         ret_str = ["Signals {\n"]
         for i, name in enumerate(self.__map.keys()): 
-            #ret_str.append("  %s %s"%(name, self.__map[name].get_type()))
             ret_str.append("  " + str(self.__map[name]))
-            
-        
         ret_str.append("}\n")
         return "".join(ret_str)
+
+class SignalGroup(object): 
+    def __init__(self, *args, **kwargs): 
+        if "name" in kwargs: self.name = kwargs["name"]
+        else: self.name = ""
+
+        if "value" in kwargs: self.value = kwargs["value"]
+        else: self.value = ""
+        # ^^^ TOOD: We will need to process this to make it easier for lookup
+
+        if "extra" in kwargs: self.extra = kwargs["extra"]
+        else: self.extra = ""
+        # ^^^ TOOD: We will need to process this to make it easier for lookup
+
+
+    def get_name(self): 
+        return self.name
+    def __str__(self): 
+        ret_str = ["%s = '%s'"%(self.name,self.value)]
+        if self.extra: 
+            ret_str.append(" { %s }\n"%(self.extra))
+        elif not self.extra: 
+            ret_str.append(";\n")
+        # ^^^ TODO: After fixing the self.extra will be have to change the the printing here. 
+        return "".join(ret_str)
+
+
+
+class SignalGroups(object):
+    def __init__(self, *args, **kwargs): 
+        if "name" in kwargs: self.name = kwargs["name"]
+        else: self.name = ""
+
+
+        self.__map = {}
+
+    def add(self, signalgroup):
+        if not isinstance(signalgroup, SignalGroup): 
+            raise ValueError("Add must be of  type SignalGroup")
+        else: 
+            self.__map[signalgroup.get_name()] = signalgroup
+            # ^^^ NOTE: I am assuiming all signal names must be uunique
+
+    def __str__(self): 
+        ret_str = ["SignalGroup %s {\n"%(self.name)]
+        for i, name in enumerate(self.__map.keys()): 
+            ret_str.append("  " + str(self.__map[name]))
+        ret_str.append("}\n")
+        return "".join(ret_str)
+
         
             
 
@@ -113,11 +160,13 @@ class STILTree(object):
             "STIL" : ";", 
             "Header" : "}",
             "Signals" : "}",
+            "SignalGroups": "}", 
         }
         self.__TOPLEVEL_CALLBACKS = {
             "STIL": self.__stil_statement,
             "Header" : self.__header_statement, 
             "Signals" : self.__signals_statement, 
+            "SignalGroups" : self.__signalgroups_statement, 
         }
 
 
@@ -191,6 +240,9 @@ class STILTree(object):
                 print(ann) 
                 self.header.history.append(ann)
         
+
+    # NOTE: What is nice about structuring of STIL parsing is that we can 
+    #       section of the various types of parsing. 
     def __signals_statement(self, value): 
         print("Signals STATEMENT: %s"%(value))
 
@@ -238,6 +290,36 @@ class STILTree(object):
                         self.signals.add(Signal(name=_name+"["+str(i)+"]", type=_type, extra = extra ))
 
 
+    def __signalgroups_statement(self, value): 
+        print("SignalGroups STATEMENT: recieved: ", value)
+
+        self.signalgroups = SignalGroups()
+        # TODO: Because we can have multiple Definitions, we may need to create 
+        #       list, and a pointer to the global. 
+
+
+        RE_DOMAIN_NAME = re.compile("SignalGroups\s+(?P<name>[\w]+)\s*")
+        match = RE_DOMAIN_NAME.search(value)
+        if match: 
+            self.signalgroups.name = match.group("name")
+        RE_SIGNALGROUP_SEMICOLON = re.compile("(?P<name>[\w]+)\s*=\s*\'(?P<def>[\w\s\-\+\.\[\]]+)\'\s*;")
+        RE_SIGNALGROUP_W_BRACKETS = re.compile("(?P<name>[\w]+)\s*=\s*\'(?P<def>[\w\s\-\+\.\[\]]+)\'\s*\{(?P<extra>[\w\s;]+)\}")
+        signal_semi = RE_SIGNALGROUP_SEMICOLON.findall(value)
+        signal_wbrackets = RE_SIGNALGROUP_W_BRACKETS.findall(value)
+
+        if signal_semi: 
+            for siggrp in signal_semi: 
+                name = siggrp[0]
+                _def = siggrp[1]
+                self.signalgroups.add(SignalGroup(name=name, value=_def))
+
+        if signal_wbrackets: 
+
+            for siggrp in signal_wbrackets: 
+                name = siggrp[0]
+                _def = siggrp[1]
+                extra = siggrp[2]
+                self.signalgroups.add(SignalGroup(name=name, value=_def, extra = extra))
 
 
 
@@ -342,3 +424,4 @@ if __name__ == "__main__":
     print(so.stil_version)
     print(so.header)
     print(so.signals)
+    print(so.signalgroups)
