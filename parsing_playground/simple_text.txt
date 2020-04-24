@@ -1,0 +1,27 @@
+STIL 1.0; 
+
+
+Header {
+    Title "Sample STIL."; 
+    Date "April 20th 2020";
+    Source "Manually generated." ; 
+    History {
+        Ann {* Annotation Mark 1 *}
+        Ann {* Annotation Mark 2 *}
+    }
+}
+
+Signals {
+  CP In; 
+  MR In; 
+  S0 In; 
+  S1 In; 
+  D0 In {ScanIn;} 
+  D7 In;
+  Q0 Out;
+  Q7 Out {
+     ScanOut; 
+     TerminateLow;
+  }
+  IO[0..7] InOut;
+}
