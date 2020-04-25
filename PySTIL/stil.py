@@ -36,8 +36,10 @@ class Header(object):
         if self.source: 
             ret_str.append("  Source  \"%s\";\n"%(self.source))
         if self.history:
+            ret_str.append("  History { \n")
             for ann in self.history: 
                 ret_str.append("    {* " + ann +"*}\n")
+            ret_str.append("  }\n")
         ret_str.append("}\n")
         return "".join(ret_str)
 
@@ -89,10 +91,64 @@ class STIL(object):
 
     def __header_processor(self, value): 
         if self.debug: print("Header STATEMENT: recieved: ", value)
-
         self.header = Header()
 
-        RE_TITLE = re.compile("Title\s+\"(?P<title>.*)\"\s*;")
+        _interal_state = []
+        title_section = False
+        date_section = False
+        source_section = False
+
+        string_literal = False
+        lastchar  = ''
+        identifier = []
+        firstcurly = 0
+        for char in value: 
+
+            if char == "{" and not firstcurly: 
+                firstcurly = 1
+                continue 
+            if not firstcurly: continue 
+            # ----------------------------------------------------- S: String-literal
+            if  title_section or date_section or source_section: 
+                if string_literal: 
+                    if char == "\"" and lastchar != "\\": # Closing string-literal
+                        _str = "".join(identifier); identifier = []
+                        if title_section: 
+                            self.header.title = _str
+                            title_section = False
+                        elif date_section: 
+                            self.header.date = _str
+                            date_section = False
+                        elif source_section: 
+                            self.header.source = _str
+                            source_section = False
+                        else: 
+                            raise RuntimeError("no expecting a string literal ")
+                        string_literal = False
+                        continue 
+                    else: 
+                        identifier.append(char)
+                        continue 
+                # ----------------------------------------------------- Freelance: String-literal start. 
+                if char == "\"":  # TODO: could ad 'and state["notdone"]'
+                    string_literal = True
+                    continue
+            lastchar = char   
+            if char not in whitespace_character: 
+                if char != ";":
+                    identifier.append(char)
+            else: 
+                if len(identifier) == 0: continue 
+                thing = "".join(identifier); identifier = []
+                if thing == "Title": 
+                    title_section = True
+                if thing == "Date": 
+                    date_section = True
+                if thing == "Source": 
+                    source_section = True
+        """
+        #RE_TITLE = re.compile("Title\s+\"(?P<title>.*)\"\s*;")
+        RE_TITLE = re.compile("Title\s+\"(?P<title>.)\"\s*;")
         match = RE_TITLE.search(value)
         if match: 
             self.header.title = match.group("title")
@@ -109,7 +165,7 @@ class STIL(object):
         if match: 
             self.header.source = match.group("source")
             if self.debug: print("HEADER-SOURCE: %s"%(self.header.source))
-        
+        """
         RE_HISTORY = re.compile("History\s+\{[.*\s\S]+\}")
         RE_ANN = re.compile("Ann\s*\{\*(?P<ann>.*)\*\}")
         match = RE_HISTORY.search(value)
