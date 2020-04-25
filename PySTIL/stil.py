@@ -14,6 +14,19 @@ class Header(object):
         self.source = ""
         self.history = []
 
+    def get_title(self): 
+        return self.title
+
+    def get_date(self): 
+        return self.date
+    
+    def get_source(self):
+        return self.source
+
+    def get_history(self): 
+        for ann in self.history: 
+            yield ann
+
     def __str__(self):
         ret_str = ["Header { \n"]
         if self.title: 
@@ -67,15 +80,15 @@ class STIL(object):
         # ^^ this map will be filled with
 
     def __stil_processor(self, value): 
-        print("STIL STATEMENT: recieved: ", value)
+        if self.debug: print("STIL STATEMENT: recieved: ", value)
         RE_STIL_VERSION = re.compile("STIL\s+(?P<version>[\d\.]+)\s*;")
         match = RE_STIL_VERSION.search(value)
         if match: 
             self.stil_version = match.group("version")
-            print("SITL VERSION: %s"%(self.stil_version))
+            if self.debug: print("SITL VERSION: %s"%(self.stil_version))
 
     def __header_processor(self, value): 
-        print("Header STATEMENT: recieved: ", value)
+        if self.debug: print("Header STATEMENT: recieved: ", value)
 
         self.header = Header()
 
@@ -83,19 +96,19 @@ class STIL(object):
         match = RE_TITLE.search(value)
         if match: 
             self.header.title = match.group("title")
-            print("HEADER-TITLE: %s"%(self.header.title))
+            if self.debug: print("HEADER-TITLE: %s"%(self.header.title))
     
         RE_DATE= re.compile("Date\s+\"(?P<date>.*)\"\s*;")
         match = RE_DATE.search(value)
         if match: 
             self.header.date = match.group("date")
-            print("HEADER-DATE: %s"%(self.header.date))
+            if self.debug: print("HEADER-DATE: %s"%(self.header.date))
 
         RE_SOURCE = re.compile("Source\s+\"(?P<source>.*)\"\s*;")
         match = RE_SOURCE.search(value)
         if match: 
             self.header.source = match.group("source")
-            print("HEADER-SOURCE: %s"%(self.header.source))
+            if self.debug: print("HEADER-SOURCE: %s"%(self.header.source))
         
         RE_HISTORY = re.compile("History\s+\{[.*\s\S]+\}")
         RE_ANN = re.compile("Ann\s*\{\*(?P<ann>.*)\*\}")
@@ -103,8 +116,7 @@ class STIL(object):
         if match:
             anns = RE_ANN.findall(value)
             for ann in anns:
-                print(ann) 
-                self.header.history.append(ann) 
+                self.header.history.append(ann.strip()) 
 
     def __signals_processor(self, value): 
         pass 
@@ -140,6 +152,7 @@ class STIL(object):
 
 
     def parse(self,):
+        debug = self.debug
         identifier = []
         cbs = 0
         start_curly_found  = 0
@@ -150,24 +163,24 @@ class STIL(object):
         with open(self.sfp,"r") as sfd: 
             for i, line in enumerate(sfd, start=1):
                 for j, char in enumerate(line, start=0):
-                    print("CHAR: %s"%(char))
+                    if debug: print("CHAR: %s"%(char))
                     if blockcomment: 
                         if char == "*" and lastchar == "/": # Nest block? Error if so . 
                             print("Nest block..... Illegal %s"%(line))
                             sys.exit(1)
                         if char == "/" and lastchar == "*": 
-                            print("DEBUG: Block comment terminated")
+                            if debug: print("DEBUG: Block comment terminated")
                             blockcomment = False  
                         continue
 
                     if char == "/" and lastchar == "/": 
-                        print("INLINE COMMENT FOUND %s"%(line))
+                        if debug: print("INLINE COMMENT FOUND %s"%(line))
                         # NOTE: If inline comment, skip the rest of the line.
                         skipline = True
                     
                     # Freelance: Start of block  
                     if char == "*" and lastchar == "/": 
-                        print("DEBUG: BLOCK COMMENT FOUND %s"%(line))
+                        if debug: print("DEBUG: BLOCK COMMENT FOUND %s"%(line))
                         blockcomment = True
                         lastchar = char
                         continue # NOTE: IF you skip line while in if-branch, you must store last char
@@ -192,12 +205,10 @@ class STIL(object):
                     if self.__in_free_state(): 
                         if char in whitespace_character or cbs == 1: 
                             value = "".join(identifier).strip("{} \n") 
-                            print("We are the start of a top leve section: ",value)
                             if value : # Meaning we have have stored actual chars, then flag the start state
                                 self.__new_top_level_state(value)
                                 continue
-                            else: 
-                                print("LOL have stored only whitespace")
+                            else: pass 
                     elif not self.__in_free_state(): 
                         if char == ";": 
                             if self.__current_state_ends_on_semicolon():
@@ -222,5 +233,5 @@ if __name__ == "__main__":
     so.parse()
 
     print("")
-    print("STIL %s;"%(so.stil_version))
-    print(so.header)
+    print("STIL %s;"%(so.stil_version), "\n")
+    print(so.header, "\n")
