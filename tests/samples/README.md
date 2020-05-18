@@ -15,3 +15,10 @@ All these samples focus primarily on the parsing methods for the STIL's Header b
   - This example contains the same contents of 'header_1' however, the syntax is 
     very poor, but valid.  
 
+
+### Signals: 
+
+* ./signals/signals_1.stil
+  - Simple 16 signal defintion with some condensed signals notation. 
+  - ScanIn and ScanOut definitions.
+

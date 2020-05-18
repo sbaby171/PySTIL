@@ -1,5 +1,9 @@
 import sys, os, re
 
+
+import utils
+import SignalsBlock as SB
+
 SEMICOLON = "semicolon"
 STARTCURLY = "startcurly"
 ENDCURLY = "endcurly"
@@ -44,6 +48,8 @@ class Header(object):
         return "".join(ret_str)
 
 
+        
+
 class STIL(object): 
 
     def __init__(self,*args,**kwargs): 
@@ -55,7 +61,10 @@ class STIL(object):
             
         self.stil_version = None 
         self.header = None
+        self.signals = None
 
+
+        # This data structure is important for the parsing methods. 
         self.TOPLEVEL = {
             "STIL" : {
                 "ending": ";",
@@ -175,7 +184,143 @@ class STIL(object):
                 self.header.history.append(ann.strip()) 
 
     def __signals_processor(self, value): 
-        pass 
+        func = "%s.__signals_processor"%(self.__class__.__name__)
+        if self.debug: print("DEBUG: %s: Starting ..."%(func)) 
+
+        self.signals = SB.Signals() 
+
+
+        # These will capture your basic signals: 
+        RE_signal_In = re.compile("(?P<name>[\"\w\[\]\.]+)\s+In\s*;")
+        RE_signal_Out = re.compile("(?P<name>[\"\w\[\]\.]+)\s+Out\s*;")
+        RE_signal_InOut = re.compile("(?P<name>[\"\w\[\]\.]+)\s+InOut\s*;")
+        RE_condensed_name = re.compile("(?P<base>[\"\w]+)\[(?P<num1>[\d]+)\.\.(?P<num2>[\d]+)\]")
+
+
+     
+        #RE_signal_withstuff = re.compile("(?P<name>[\w\[\]\.]+)\s+{(?P<details>[;\s\w\.]+)}")
+        RE_signal_cb_ScanOut = re.compile("(?P<name>[\"\w\[\]\.]+)\s+Out\s*\{\s*ScanOut\s*;\s*\}")
+        RE_signal_cb_ScanIn = re.compile("(?P<name>[\"\w\[\]\.]+)\s+In\s*\{\s*ScanIn\s*;\s*\}")
+
+        # TODO: These should probably be moved to the SignalsBlock module (along with entire processing field huh) 
+
+
+        # signals = SB.process(value)
+        # for i in range(len(signals)): 
+        #     self.signals.add(signals[i]) 
+
+
+        match = RE_signal_cb_ScanOut.findall(value)
+        if match: 
+            for signal_in in match:  
+                if '[' not in signal_in: 
+                    self.signals.add(SB.Signal(name=signal_in, type = "Out", fields={"ScanOut":True}))
+                elif '[' in signal_in: 
+                    condensedName = RE_condensed_name.search(signal_in)
+                    if not condensedName: 
+                        raise RuntimeError("Should have found condensed name. ")
+                    if condensedName: 
+                        baseName = condensedName.group("base")
+                        num1 = int(condensedName.group("num1"))
+                        num2 = int(condensedName.group("num2"))
+                        if num1 > num2: higher = num1; lower = num2
+                        elif num2 > num1: higher = num2; lower = num1 
+                        else:  raise RuntimeError("Numbers can equal each other.")
+                        i = lower 
+                        while i <= higher:
+                            name = "%s[%d]"%(baseName,i) 
+                            self.signals.add(SB.Signal(name=name, type = "Out", fields={"ScanOut":True}))
+                            i += 1
+
+        match = RE_signal_cb_ScanIn.findall(value)
+        if match: 
+            for signal_in in match:  
+                if '[' not in signal_in: 
+                    self.signals.add(SB.Signal(name=signal_in, type = "In", fields={"ScanIn":True}))
+                elif '[' in signal_in: 
+                    condensedName = RE_condensed_name.search(signal_in)
+                    if not condensedName: 
+                        raise RuntimeError("Should have found condensed name. ")
+                    if condensedName: 
+                        baseName = condensedName.group("base")
+                        num1 = int(condensedName.group("num1"))
+                        num2 = int(condensedName.group("num2"))
+                        if num1 > num2: higher = num1; lower = num2
+                        elif num2 > num1: higher = num2; lower = num1 
+                        else:  raise RuntimeError("Numbers can equal each other.")
+                        i = lower 
+                        while i <= higher:
+                            name = "%s[%d]"%(baseName,i) 
+                            self.signals.add(SB.Signal(name=name, type = "In", fields={"ScanIn":True}))
+                            i += 1
+
+        # Basic In pins  
+        match = RE_signal_In.findall(value)
+        if match: 
+            for signal_in in match:  
+                if '[' not in signal_in: 
+                    self.signals.add(SB.Signal(name=signal_in, type = "In"))
+                elif '[' in signal_in: 
+                    condensedName = RE_condensed_name.search(signal_in)
+                    if not condensedName: 
+                        raise RuntimeError("Should have found condensed name. ")
+                    if condensedName: 
+                        baseName = condensedName.group("base")
+                        num1 = int(condensedName.group("num1"))
+                        num2 = int(condensedName.group("num2"))
+                        if num1 > num2: higher = num1; lower = num2
+                        elif num2 > num1: higher = num2; lower = num1 
+                        else:  raise RuntimeError("Numbers can equal each other.")
+                        i = lower 
+                        while i <= higher:
+                            name = "%s[%d]"%(baseName,i) 
+                            self.signals.add(SB.Signal(name=name, type = "In"))
+                            i += 1
+        match = RE_signal_Out.findall(value)
+        if match: 
+            for signal_in in match:  
+                if '[' not in signal_in: 
+                    self.signals.add(SB.Signal(name=signal_in, type = "Out"))
+                elif '[' in signal_in: 
+                    condensedName = RE_condensed_name.search(signal_in)
+                    if not condensedName: 
+                        raise RuntimeError("Should have found condensed name. ")
+                    if condensedName: 
+                        baseName = condensedName.group("base")
+                        num1 = int(condensedName.group("num1"))
+                        num2 = int(condensedName.group("num2"))
+                        if num1 > num2: higher = num1; lower = num2
+                        elif num2 > num1: higher = num2; lower = num1 
+                        else:  raise RuntimeError("Numbers can equal each other.")
+                        i = lower 
+                        while i <= higher:
+                            name = "%s[%d]"%(baseName,i) 
+                            self.signals.add(SB.Signal(name=name, type = "out"))
+                            i += 1
+        match = RE_signal_InOut.findall(value)
+        if match: 
+            for signal_in in match:  
+                if '[' not in signal_in: 
+                    self.signals.add(SB.Signal(name=signal_in, type = "InOut"))
+                elif '[' in signal_in: 
+                    condensedName = RE_condensed_name.search(signal_in)
+                    if not condensedName: 
+                        raise RuntimeError("Should have found condensed name. ")
+                    if condensedName: 
+                        baseName = condensedName.group("base")
+                        num1 = int(condensedName.group("num1"))
+                        num2 = int(condensedName.group("num2"))
+                        if num1 > num2: higher = num1; lower = num2
+                        elif num2 > num1: higher = num2; lower = num1 
+                        else:  raise RuntimeError("Numbers can equal each other.")
+                        i = lower 
+                        while i <= higher:
+                            name = "%s[%d]"%(baseName,i) 
+                            self.signals.add(SB.Signal(name=name, type = "InOut"))
+                            i += 1
+
+                        self.signals.add_shorthand_ref(signal_in) # NOTE: Add short hand reference
+        return 
 
     def __signalgroups_processor(self, value): 
         pass 
@@ -208,6 +353,16 @@ class STIL(object):
 
 
     def parse(self,):
+        """ 
+
+        The implementation is made difficult due to the fact that: 
+            - it is single pass (with sub multi-passes)
+            - it processes the file in a line and character fashion.
+
+        There is basically : 
+          - Dont get caught in a string-lteral. 
+          -  We implement look-back methodolgies (we track the last char)
+        """
         debug = self.debug
         identifier = []
         cbs = 0
@@ -220,6 +375,9 @@ class STIL(object):
             for i, line in enumerate(sfd, start=1):
                 for j, char in enumerate(line, start=0):
                     if debug: print("CHAR: %s"%(char))
+
+
+
                     if blockcomment: 
                         if char == "*" and lastchar == "/": # Nest block? Error if so . 
                             print("Nest block..... Illegal %s"%(line))
@@ -242,30 +400,47 @@ class STIL(object):
                         continue # NOTE: IF you skip line while in if-branch, you must store last char
 
                     # ------------------------------------------------------------------------------------
-                    lastchar = char   
+
+
+
+
+                    # This is an important block here.... 
+                    #   - the last char gets stored, 
+                    #   - a sneaky look-ahead is used for finding inline comments
+                    #   - the current char is stored in the 'identifier' list. 
+                    # 
+                    # Thus the implication is that later code `~simply` worry about state. 
+                    #
+                    lastchar = char  # TODO: This seems like an improper spot to set the lastchar.
                     if skipline: 
                         skipline = False 
                         break 
                     elif char == "/" and self.__in_free_state(): 
-                        continue 
-                    else: identifier.append(char)
+                        try : 
+                            if line[j+1] == "/":  # We found inline comment
+                                break  
+                        except:
+                            raise RuntimeError("Recieved weird line: %s"%(line)) 
+                        print("XXXXXXXXXXX Should never see this line...")
+                    else: 
+                        identifier.append(char)
 
+                    # Count the curlies
                     if char == "{":
                         cbs +=1 
                         if cbs == 1: start_curly_found = 1
-                    
                     if char == "}": 
                         cbs -= 1
                         if cbs == 0: end_curly_found = 1
 
                     if self.__in_free_state(): 
                         if char in whitespace_character or cbs == 1: 
-                            value = "".join(identifier).strip("{} \n") 
+                            value = "".join(identifier).strip("{} \n") # NOTE: 'identifer' is not resest! 
                             if value : # Meaning we have have stored actual chars, then flag the start state
                                 self.__new_top_level_state(value)
                                 continue
                             else: pass 
-                    elif not self.__in_free_state(): 
+                    else: 
                         if char == ";": 
                             if self.__current_state_ends_on_semicolon():
                                 self.__eat("".join(identifier))
@@ -278,6 +453,9 @@ class STIL(object):
                             identifier = []
                             start_curly_found = 0
                             end_curly_found = 0
+                        else:  # Else, continue becasue 'char' was just a char.
+                            continue
+
         return 
 
 
@@ -285,9 +463,19 @@ class STIL(object):
 
 if __name__ == "__main__": 
     print("PySTIL.stil running ... \n")
-    so = STIL(sfp=sys.argv[-1])
+
+    if "-debug" in sys.argv: debug = True
+    else: debug = False 
+    so = STIL(sfp=sys.argv[-1], debug=debug)
     so.parse()
 
     print("")
     print("STIL %s;"%(so.stil_version), "\n")
     print(so.header, "\n")
+    print(so.signals, "\n")
+
+
+
+
+
+    print(utils.greetings())

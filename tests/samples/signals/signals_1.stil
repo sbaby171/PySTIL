@@ -1,0 +1,16 @@
+STIL 1.0; 
+
+
+Signals {
+  CP In; 
+  MR In; 
+  S0 In; 
+  S1 In; 
+  D0 In { 
+      ScanIn;
+  } 
+  D7 In;
+  Q0 Out;
+  Q7 Out {ScanOut;}
+  IO[0..7] InOut;
+}
