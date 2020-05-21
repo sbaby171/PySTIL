@@ -3,12 +3,20 @@ import sys, os, re
 
 import utils
 import SignalsBlock as SB
+import SignalGroupsBlock as SGB
 
 SEMICOLON = "semicolon"
 STARTCURLY = "startcurly"
 ENDCURLY = "endcurly"
 ENTITY = "entity"
 whitespace_character = [" ", "\t", "\n"]
+
+
+TOPLEVEL = [
+    "STIL", "Header", "Signals", "SignalGroups", "ScanStructures", "Spec", "Timing", "Selector", 
+    "PatternBurst", "PatternExec", "Procedures", "MacroDefs", "Pattern", 
+    "Include", "UserKeywords", "UserFunctions","Ann",
+]
 
 
 class Header(object): 
@@ -48,6 +56,74 @@ class Header(object):
         return "".join(ret_str)
 
 
+class Include(object): 
+    """ 
+    
+    ifneed: 
+    """
+
+    def __init__(self,*args,**kwargs): 
+        
+        if "filepath" in kwargs: self.filepath = kwargs["filepath"] 
+        else: self.filepath = ""
+        if "ifneed" in kwargs: self.ifneed = kwargs["ifneed"] 
+        else: self.ifneed = ""
+        # ^ THis holds the 'block type'
+
+
+        # TODO: Uncomment this check, or at least move it 
+        #if self.filepath: 
+        #    if not os.path.isfile(self.filepath): 
+        #        raise ValueError("The file path for the given Include does not exist.")
+
+        if self.ifneed: 
+            if self.ifneed not in TOPLEVEL: 
+                raise ValueError("The ifneed reference must be a top-level STIL block: %s"%(self.ifneed))
+
+
+
+    def __str__(self): 
+        retstr = "Include %s"%(self.filepath)
+        if self.ifneed: 
+            retstr += " IfNeed %s"%(self.ifneed)
+        return retstr 
+
+       
+        
+
+
+class Includes(object): 
+    def __init__(self, *args, **kwargs): 
+        self._name_to_obj = {}
+    
+    def add(self, include): 
+        if not isinstance(include, Include): 
+            raise ValueError("Must provide object of class 'Include'") 
+        if include.filepath in self._name_to_obj.keys(): 
+            raise ValueError("Include provided already exists")
+        else: 
+            self._name_to_obj[include.filepath] = include
+
+    def __len__(self): 
+        return len(self._name_to_obj)
+    def __iter__(self): 
+        for include in self._name_to_obj.keys(): 
+            yield self._name_to_obj[include]
+    def __getitem__(self, path): 
+        return self._name_to_obj[path]
+
+
+    def __str__(self): 
+        retstr = ["Includes:\n"]
+        for include in self._name_to_obj.keys(): 
+            retstr.append(str(self._name_to_obj[include]) + "\n")
+        
+        return "".join(retstr) 
+
+        
+
+
+
         
 
 class STIL(object): 
@@ -60,6 +136,7 @@ class STIL(object):
         else: self.sfp = None 
             
         self.stil_version = None 
+        self.includes = None
         self.header = None
         self.signals = None
 
@@ -70,6 +147,10 @@ class STIL(object):
                 "ending": ";",
                 "processor" : self.__stil_processor, 
             },
+            "Include" : {
+                "ending": ';',
+                "processor": self.__include_processor, 
+            }, 
             "Header" : {
                 "ending": "}",
                 "processor" : self.__header_processor, 
@@ -81,6 +162,22 @@ class STIL(object):
             "SignalGroups": {
                 "ending": "}",
                 "processor" : self.__signalgroups_processor, 
+            } ,
+            "Timing": {
+                "ending": "}", # TODO: Confirm
+                "processor": self.__timing_processor,
+            } ,
+            "PatternBurst": {
+                "ending": "}", # TODO: Confirm
+                "processor": self.__patternburst_processor,
+            } ,
+            "PatternExec": {
+                "ending": "}", # TODO: Confirm
+                "processor": self.__patternexec_processor,
+            }, 
+            "Pattern": {
+                "ending": "}", # TODO: Confirm
+                "processor": self.__pattern_processor,
             } 
         }
         self.__states = {
@@ -89,6 +186,55 @@ class STIL(object):
 
         self.__map = {}
         # ^^ this map will be filled with
+
+    def __pattern_processor(self, value): 
+        func = "%s.__pattern_processor"%(self.__class__.__name__)
+        print("TODO: (%s): Starting .... " %(func))
+        pass
+
+    def __patternexec_processor(self, value): 
+        func = "%s.__patternexec_processor"%(self.__class__.__name__)
+        print("TODO: (%s): Starting .... " %(func))
+        pass
+
+    def __patternburst_processor(self, value): 
+        func = "%s.__patternburst_processor"%(self.__class__.__name__)
+        print("TODO: (%s): Starting .... " %(func))
+        pass
+    
+    def __timing_processor(self, value): 
+        func = "%s.__timing_processor"%(self.__class__.__name__)
+        print("TODO: (%s): Starting .... " %(func))
+        pass
+
+    def __include_processor(self, value): 
+        func = "%s.__includes_processor"%(self.__class__.__name__)
+        print("DEBUG: (%s): Starting .... " %(func))
+
+
+        if not self.includes: 
+            self.includes = Includes()
+
+        RE_include = re.compile("Include\s+\"(?P<path>[\.\/\w\$\\\]+)\";")
+        match = RE_include.search(value)
+        if match: 
+            self.includes.add(Include(filepath = match.group("path")))
+            return 
+
+        RE_include_with_ifneed = re.compile("Include\s+\"(?P<path>[\.\/\w\$\\\]+)\"\s+IfNeed\s+(?P<ifneed>[\w]+);")
+        match = RE_include_with_ifneed.search(value)
+        if match: 
+            self.includes.add(Include(filepath = match.group("path"), ifneed = match.group("ifneed")))
+            return 
+
+        raise ValueError("Recieved some invaid STIL syntax for an Include: %s"%(value))
+
+
+    def __signalgroups_processor(self, value): 
+        func = "%s.__signalgroups_processor"%(self.__class__.__name__)
+        print("DEBUG: (%s): Starting .... " %(func))
+        #sys.exit(1)
+        pass
 
     def __stil_processor(self, value): 
         if self.debug: print("STIL STATEMENT: recieved: ", value)
@@ -322,8 +468,7 @@ class STIL(object):
                         self.signals.add_shorthand_ref(signal_in) # NOTE: Add short hand reference
         return 
 
-    def __signalgroups_processor(self, value): 
-        pass 
+ 
 
     def __in_free_state(self): 
         return self.__states["FREE"]
@@ -400,7 +545,9 @@ class STIL(object):
                         continue # NOTE: IF you skip line while in if-branch, you must store last char
 
                     # ------------------------------------------------------------------------------------
-
+                    if char == "/" and self.__in_free_state(): 
+                        lastchar = char
+                        continue
 
 
 
@@ -469,8 +616,11 @@ if __name__ == "__main__":
     so = STIL(sfp=sys.argv[-1], debug=debug)
     so.parse()
 
+
+
     print("")
     print("STIL %s;"%(so.stil_version), "\n")
+    print(so.includes)
     print(so.header, "\n")
     print(so.signals, "\n")
 
