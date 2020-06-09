@@ -2,6 +2,8 @@
 A module to read and write STIL files.
 
 
+
+
 ## Testing: 
 The unit tests are implemented using pythons `unittest` module. 
 
@@ -12,4 +14,6 @@ The unit tests are implemented using pythons `unittest` module.
 
 
 ## TODOs: 
+* Establish to two variation of parsing: track char-index, and full tokenization. 
+
 
