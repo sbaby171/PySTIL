@@ -1,10 +1,4 @@
-// This example is closely related to an example found within the 
-// STIL documentation in Seciton 9.2. I added the 'Title' feild for 
-// more test coverage.  
-
-
 STIL 1.0; 
-
 Header {
   Title "Sample STIL Title";
   Date "Tue Apr 28 12:23:48 EST 1996"; 
