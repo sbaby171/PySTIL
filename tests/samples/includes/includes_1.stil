@@ -1,0 +1,6 @@
+// This stil instance is only to contain 'Include' instances. 
+// Rememebr, many of these tests are setup just to test that the lexer 
+// is working correctly. 
+
+Include  "/home/stils/mystil.stil"; 
+Include "$HOME/elsewhere/mystil.stil" IfNeed Signals; 
