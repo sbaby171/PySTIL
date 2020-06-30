@@ -1,10 +1,4 @@
 STIL 1.0 ;
-// Inline comment
-/* inline block comment */
-/*
-Comment "taking" up 
-many 
-lines. */
 
 Header {
    Title "Simple 74act299 Example for STIL Reader";
@@ -15,16 +9,19 @@ Header {
    }
 }
 
-Signals {
-  CP In; MR In; S0 In; S1 In; D0 In {ScanIn;} D7 In;
-  Q0 Out; Q7 Out {ScanOut;} IO[0..7] InOut;
-}
+Include "../all_timing.stil"; 
+Include "$DESIGN_STUFF/STIL_scan.stil" IfNeed ScanStructures; 
 
-SignalGroups {
+Signals {
+  CP In; MR In; S0 In; S1 In; D0 In {ScanIn;} D7 In;Q0 Out;Q7 Out {ScanOut;}
+  IO[0..7] InOut;
+}
+SignalGroups iobus {
   Bus = 'IO[0..7]';
 }
 
 Timing {
+  SignalGroups iobus; 
   WaveformTable WavTbl1 {
     Period '100ns';
     Waveforms {
@@ -44,7 +41,7 @@ Timing {
 
 PatternBurst Burst1 {
   PatList {
-    Pat1;
+    Pat1; Pat2;
   }
 }
 
@@ -88,4 +85,17 @@ Pattern Pat1 {
   Ann {* Shift 1R *}
   V { CP=P; D0=1; Q0=H; Q7=L; Bus=HLHLHLHL; }            // Vec 15
 
+}
+
+
+Ann {* Done *}
+
+Pattern Pat2 { 
+  W WavTbl1;
+  Ann {* Reset *}
+  V { CP=P; MR=0; S1=0; S0=0; D0=0; D7=0; Q0=L; Q7=L; }  // Vec 0
+}
+
+SignalGroups {
+  Buss = 'IO[0..7]';
 }
