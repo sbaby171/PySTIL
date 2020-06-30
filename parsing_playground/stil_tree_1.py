@@ -173,6 +173,7 @@ class STILTree(object):
         self.stil_version = ""
         self.header = None
         self.signals = None
+        self.signalgroups = None
 
     def in_free_state(self): 
         return self.__states["FREE"]
@@ -321,13 +322,7 @@ class STILTree(object):
                 extra = siggrp[2]
                 self.signalgroups.add(SignalGroup(name=name, value=_def, extra = extra))
 
-
-
-
-class STILNode(object): 
-    def __init__(self,*args, **kwargs): 
-        if "debug" in kwargs: self.debug = kwargs["debug"]
-        else: self.debug = None 
+ 
 
     
 
@@ -338,23 +333,16 @@ class STILNode(object):
 
 
 def parse(sfp, ): 
-
-
-    string_literal = False 
     identifier = []
-    lastchar = ''
-
-
     stiltree = STILTree()
-
     cbs = 0
     start_curly_found  = 0
     end_curly_found  = 0
-
-
+    skipline = False 
+    blockcomment = False
+    lastchar = ''
     with open(sfp,"r") as sfd: 
         for i, line in enumerate(sfd, start=1):
-            if i == 99: break
             for j, char in enumerate(line, start=0):
                 print("CHAR: %s"%(char))
                 # ----------------------------------------------------- S: String-literal
@@ -372,10 +360,36 @@ def parse(sfp, ):
                 #    string_literal = True
                 #    identifier.append(char)
                 #    continue
+                if blockcomment: 
+                    if char == "*" and lastchar == "/": # Nest block? Error if so . 
+                        print("Nest block..... Illegal %s"%(line))
+                        sys.exit(1)
+                    if char == "/" and lastchar == "*": 
+                        print("DEBUG: Block comment terminated")
+                        blockcomment = False  
+                    continue
 
+                if char == "/" and lastchar == "/": 
+                    print("INLINE COMMENT FOUND %s"%(line))
+                    # NOTE: If inline comment, skip the rest of the line.
+                    skipline = True
+                    
+                # Freelance: Start of block  
+                if char == "*" and lastchar == "/": 
+                    print("DEBUG: BLOCK COMMENT FOUND %s"%(line))
+                    blockcomment = True
+                    lastchar = char
+                    continue # NOTE: IF you skip line while in if-branch, you must store last char
 
                 # ------------------------------------------------------------------------------------
-                identifier.append(char)
+                lastchar = char   
+                if skipline: 
+                    skipline = False 
+                    break 
+                elif char == "/" and stiltree.in_free_state(): 
+                    continue 
+
+                else: identifier.append(char)
                 #print(identifier)
 
                 if char == "{":
@@ -409,7 +423,6 @@ def parse(sfp, ):
                         start_curly_found = 0
                         end_curly_found = 0
 
-                lastchar = char   
 
     return stiltree
         
