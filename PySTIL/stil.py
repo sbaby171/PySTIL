@@ -1,631 +1,324 @@
-import sys, os, re
+import sys, os, re, argparse
+from collections import OrderedDict
 
 
-import utils
-import SignalsBlock as SB
-import SignalGroupsBlock as SGB
-
-SEMICOLON = "semicolon"
-STARTCURLY = "startcurly"
-ENDCURLY = "endcurly"
-ENTITY = "entity"
-whitespace_character = [" ", "\t", "\n"]
+import KeyLookUps as KLU
+import SymbolTable as STBL
+import STILutils as sutils
 
 
-TOPLEVEL = [
-    "STIL", "Header", "Signals", "SignalGroups", "ScanStructures", "Spec", "Timing", "Selector", 
-    "PatternBurst", "PatternExec", "Procedures", "MacroDefs", "Pattern", 
-    "Include", "UserKeywords", "UserFunctions","Ann",
-]
-
-
-class Header(object): 
-    def __init__(self, *args, **kwargs):
-        self.title = ""
-        self.date = ""
-        self.source = ""
-        self.history = []
-
-    def get_title(self): 
-        return self.title
-
-    def get_date(self): 
-        return self.date
-    
-    def get_source(self):
-        return self.source
-
-    def get_history(self): 
-        for ann in self.history: 
-            yield ann
-
-    def __str__(self):
-        ret_str = ["Header { \n"]
-        if self.title: 
-            ret_str.append("  Title \"%s\";\n"%(self.title))
-        if self.date: 
-            ret_str.append("  Date \"%s\";\n"%(self.date))
-        if self.source: 
-            ret_str.append("  Source  \"%s\";\n"%(self.source))
-        if self.history:
-            ret_str.append("  History { \n")
-            for ann in self.history: 
-                ret_str.append("    {* " + ann +"*}\n")
-            ret_str.append("  }\n")
-        ret_str.append("}\n")
-        return "".join(ret_str)
-
-
-class Include(object): 
-    """ 
-    
-    ifneed: 
-    """
-
-    def __init__(self,*args,**kwargs): 
+class Signal(object): 
+    def __init__(self, *args, **kwargs): 
+        if "file" in kwargs: self._file = kwargs["file"] 
+        else: self._file = None
+        # TODO: Need a reference to the file is was found in. 
+        # From the perspective of the a STIL translation, this would 
+        # not be important, however, for reporting or tracing, we 
+        # need to be clear which file this block is correspondants to. 
         
-        if "filepath" in kwargs: self.filepath = kwargs["filepath"] 
-        else: self.filepath = ""
-        if "ifneed" in kwargs: self.ifneed = kwargs["ifneed"] 
-        else: self.ifneed = ""
-        # ^ THis holds the 'block type'
+        
 
 
-        # TODO: Uncomment this check, or at least move it 
-        #if self.filepath: 
-        #    if not os.path.isfile(self.filepath): 
-        #        raise ValueError("The file path for the given Include does not exist.")
+    @staticmethod
+    def create_signals(string, debug=False): 
+        func = "Signals.create_signals"
+        tokens = sutils.lex(string=string, debug=debug)
+        sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
 
-        if self.ifneed: 
-            if self.ifneed not in TOPLEVEL: 
-                raise ValueError("The ifneed reference must be a top-level STIL block: %s"%(self.ifneed))
+        if debug: 
+            print("Tokens: ", tokens)
+            print("SymbolTable: ", sytbl)
+        # TODO: Create each object
+        #  - Need to do this by eating the tokens (use symbolt table to help you)
+
+        signals = {}
+        typeList = ["In", "Out", "InOut", "Supply", "Psuedo"]
+
+        token = {}
+        signalName = ""
+        signalType = ""
+        i = 2; end = len(tokens) - 1; cbs = 0; 
+
+        while i <= end: 
+            token = tokens[i]
+
+            if token['tag'] == "}": 
+                cbs -= 1
+                if cbs == 0: 
+                    signalsName = ""; signalType = "";
+                    i += 1; continue 
+
+            if cbs == 1: 
+                if token['tag'] == "ScanIn": 
+                    if tokens[i+1]['tag'] == ';': 
+                        signals[signalName] = {"type":signalType,
+                                                   "ScanIn":True}
+                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                        i+=1; continue 
+                    else: 
+                        raise RuntimeError("Not ready to handle decimal scans")
+                        # TODO: Else, use symbol table to grab the next token index 
+                        # of the semicolon.
+                if token['tag'] == "ScanOut": 
+                    if tokens[i+1]['tag'] == ';': 
+                        signals[signalName] = {"type":signalType,
+                                                   "ScanOut":True}
+                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                        i+=1; continue 
+                    else: 
+                        raise RuntimeError("Not ready to handle decimal scans")
+                        # TODO: Else, use symbol table to grab the next token index 
+                        # of the semicolon.
 
 
+            if cbs == 0: 
+                if token['tag'] == "identifier": 
+                    signalName = token['token']
+                    if tokens[i+1]['tag'] not in typeList: 
+                        print("Current: ", i, token)
+                        print("Next   : ", i+1, tokens[i+1])
+                        print("  - ", tokens[i+1]['tag'], type(tokens[i+1]['tag']))
+                        raise ValueError("Invalid syntax of Signals")
 
-    def __str__(self): 
-        retstr = "Include %s"%(self.filepath)
-        if self.ifneed: 
-            retstr += " IfNeed %s"%(self.ifneed)
-        return retstr 
+                    else: 
+                        signalType = tokens[i+1]['tag']
+                        if tokens[i+2]['tag'] == ';': 
+                            if signalName in signals: 
+                                raise RuntimeError("Signal %s is already defined"%(signalName))
+                                # ^^^ TODO: Is this valid? 
+                            else: 
+                                signals[signalName] = {"type":signalType}
+                                print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+
+                                signalsName = ""; signalType = "";
+                                i += 3; continue 
+                        elif tokens[i+2]['tag'] == "{": 
+                            cbs += 1 
+                            i += 3; continue 
+                        else: 
+                            raise RuntimeError("Invalid syntax (i+2 != ; || {)")
+                else: 
+                    raise RuntimeError("Invalid syntax (cbs == 0 but not identifier)")
+            i += 1
+
+        # TODO: return signals? 
+            
 
        
-        
 
-
-class Includes(object): 
-    def __init__(self, *args, **kwargs): 
-        self._name_to_obj = {}
-    
-    def add(self, include): 
-        if not isinstance(include, Include): 
-            raise ValueError("Must provide object of class 'Include'") 
-        if include.filepath in self._name_to_obj.keys(): 
-            raise ValueError("Include provided already exists")
-        else: 
-            self._name_to_obj[include.filepath] = include
-
-    def __len__(self): 
-        return len(self._name_to_obj)
-    def __iter__(self): 
-        for include in self._name_to_obj.keys(): 
-            yield self._name_to_obj[include]
-    def __getitem__(self, path): 
-        return self._name_to_obj[path]
-
-
-    def __str__(self): 
-        retstr = ["Includes:\n"]
-        for include in self._name_to_obj.keys(): 
-            retstr.append(str(self._name_to_obj[include]) + "\n")
-        
-        return "".join(retstr) 
-
-        
-
-
-
-        
 
 class STIL(object): 
 
-    def __init__(self,*args,**kwargs): 
+    def __init__(self, *args, **kwargs): 
         if "debug" in kwargs: self.debug = kwargs["debug"]
-        else: self.debug = None 
+        else: self.debug = False
+        
+        # TODO: There are technical worries about always loading the STIL in a 
+        # string and having to keep it as a string. The need for keeping it as 
+        # a string is becasue we do a series of lookups for deeper analysis if 
+        # requested. Moreover, this problem becomes exasterbated by the useage
+        # of 'Includes' in the STIL file. 
+        # 
+        if "string" in kwargs: self._string = kwargs["string"]
+        if not "file" in kwargs: self._filepath = None 
+        else:     
+            if not os.path.isfile(kwargs["file"]): 
+                raise ValueError("Provided file doesn't exist: %s"%(kwargs['file']))
+            self._filepath = kwargs['file']
+            f = open(self._filepath,'r')
+            self._string = f.read()
+            f.close()
+        
+        if not self._string: raise ValueError("Must provide either 'string' OR 'file'.")
 
-        if "sfp" in kwargs: self.sfp = kwargs["sfp"]
-        else: self.sfp = None 
+        if "all" in kwargs: self._all = kwargs["all"]
+        else: self._all = False 
+
+        if self._all:
+            print("TODO: tokenize the entire stil nad build symboltable.")
+            self._all = True
+            self._tplp = None 
+        else: 
+            print("TODO: TPLP.")
+            self._all = False
+            self._tplp = OrderedDict()
+        # ^^^ TODO: There is an honest question as to whether or not, we really 
+        # need to have this distinction. In one way, this is helpful in that 
+        # you can the need to create all the SymbolTables for each block in the 
+        # toplevel-pointer dictionary. However, it is much easier to maintain
+        # a single method of operation. Settings up this fork so early on 
+        # maye cause many issues later on . 
+
+        self.__parsed = False 
+        self.__signals = []
+
+
+
+    def get_signalgroups(self, ): 
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        retList = []
+        for fileKey, value in self._tplp.items(): 
+            #print(value)
+            if "SignalGroups" in value["ObjectMap"]: 
+                print("")
+                for entry in value["ObjectMap"]["SignalGroups"]: 
+                    retList.append(entry["name"])
+        return retList 
+
+    def get_signals(self, ): 
+        # TODO: This should be returning a list of Signal objects
+        # Because there can only be one Signals block per translation, 
+        # it lends itself nicely to the implementation of a list of class
+        # return.
+        if self.__signals: return self.__signals 
+
+        print("\nXXXX")
+        # Create the Signal instances by referring to the tplp. 
+        for fileKey, value in self._tplp.items(): 
+            #if "Signals" in self._tplp[fileKey]: 
+            for entry in self._tplp[fileKey]["Signals"]:   
+                print(entry)
+                tmp = self._string[entry['start']:entry['end'] + 1] # TODO: Not proper for includes.
+                listOfSignals = Signal.create_signals(tmp, debug = self.debug)
+
+
+    def parse(self, ): 
+        func = "STIL.parse"
+
+
+        if self._tplp is not None: 
+
+            if not self._filepath : fileKey = 'string'
+            else:                   fileKey = os.path.basename(self._filepath)
+
+            # (1) Execute first layer of tpl tagger
+            self._tplp = sutils.tpl_tagger( self._tplp, 
+                                            fileKey = fileKey, 
+                                            string = self._string, 
+                                            debug = self.debug)
+            if self.debug: 
+                print("\nDEBUG: (%s): First layer pass 'toplevel-pointer': %s"%(func, fileKey))
+                for key, value in self._tplp[fileKey].items(): 
+                    print("DEBUG:   - %s : %s"%(key,value))                
             
-        self.stil_version = None 
-        self.includes = None
-        self.header = None
-        self.signals = None
+            # (2) Execute sanity check and priliminary object builder. 
+            objectMap = sutils.tplp_check_and_object_builder(string  = self._string, 
+                                                             tplp    = self._tplp,
+                                                             fileKey = fileKey,
+                                                             debug   = self.debug,) 
+
+            self._tplp[fileKey]["ObjectMap"] = objectMap
+            # TODO: (MAYBE), Link the tplp and objectMap: self._tplp[fileKey]['ObjectMap'] = objectMap
+            # Note, the problem with linking the object map to the tplp is that we have a bunch of 
+            # redundant information noww. 
+            # 
+            # TODO: Becaue of this redundant information, it may be better to *replace* the 
+            # the entry in tplp, for a given block, with the contents of the objct map. 
+            #  ex.) self.__tplp[fileKey][<toplevelblock>] = objectMap[<toplevelblock>]
+            for block in self._tplp[fileKey]: 
+                if block in objectMap: 
+                    print(block, self._tplp[fileKey][block], objectMap[block])
+                else: 
+                    print("Keeping old instance for: ", block)
+
+            if self.debug:
+                print("\nDEBUG: (%s): Obect Map on first pass: %s"%(func, fileKey))
+                for key, value in objectMap.items(): 
+                    print("DEBUG:   - %s: %s"%(key, value))
+            
+            # (3): If Includes present, we must recusively checks these, 
+            if "Include" in objectMap: 
+                print("DEBUG: (%s): TODO: Working on the includes..."%(func))
+
+                includesList = objectMap["Include"]
+                i = 0
+
+                while i < len(includesList): 
+                    include = includesList[i]['file']
+                    print("DEBUG: (%s): TODO: Checking the following include file: %s"%(func, include))
 
 
-        # This data structure is important for the parsing methods. 
-        self.TOPLEVEL = {
-            "STIL" : {
-                "ending": ";",
-                "processor" : self.__stil_processor, 
-            },
-            "Include" : {
-                "ending": ';',
-                "processor": self.__include_processor, 
-            }, 
-            "Header" : {
-                "ending": "}",
-                "processor" : self.__header_processor, 
-            },
-            "Signals" : {
-                "ending": "}",
-                "processor" : self.__signals_processor, 
-            },
-            "SignalGroups": {
-                "ending": "}",
-                "processor" : self.__signalgroups_processor, 
-            } ,
-            "Timing": {
-                "ending": "}", # TODO: Confirm
-                "processor": self.__timing_processor,
-            } ,
-            "PatternBurst": {
-                "ending": "}", # TODO: Confirm
-                "processor": self.__patternburst_processor,
-            } ,
-            "PatternExec": {
-                "ending": "}", # TODO: Confirm
-                "processor": self.__patternexec_processor,
-            }, 
-            "Pattern": {
-                "ending": "}", # TODO: Confirm
-                "processor": self.__pattern_processor,
-            } 
-        }
-        self.__states = {
-            "FREE" : True,
-        }
-
-        self.__map = {}
-        # ^^ this map will be filled with
-
-    def __pattern_processor(self, value): 
-        func = "%s.__pattern_processor"%(self.__class__.__name__)
-        print("TODO: (%s): Starting .... " %(func))
-        pass
-
-    def __patternexec_processor(self, value): 
-        func = "%s.__patternexec_processor"%(self.__class__.__name__)
-        print("TODO: (%s): Starting .... " %(func))
-        pass
-
-    def __patternburst_processor(self, value): 
-        func = "%s.__patternburst_processor"%(self.__class__.__name__)
-        print("TODO: (%s): Starting .... " %(func))
-        pass
-    
-    def __timing_processor(self, value): 
-        func = "%s.__timing_processor"%(self.__class__.__name__)
-        print("TODO: (%s): Starting .... " %(func))
-        pass
-
-    def __include_processor(self, value): 
-        func = "%s.__includes_processor"%(self.__class__.__name__)
-        print("DEBUG: (%s): Starting .... " %(func))
-
-
-        if not self.includes: 
-            self.includes = Includes()
-
-        RE_include = re.compile("Include\s+\"(?P<path>[\.\/\w\$\\\]+)\";")
-        match = RE_include.search(value)
-        if match: 
-            self.includes.add(Include(filepath = match.group("path")))
-            return 
-
-        RE_include_with_ifneed = re.compile("Include\s+\"(?P<path>[\.\/\w\$\\\]+)\"\s+IfNeed\s+(?P<ifneed>[\w]+);")
-        match = RE_include_with_ifneed.search(value)
-        if match: 
-            self.includes.add(Include(filepath = match.group("path"), ifneed = match.group("ifneed")))
-            return 
-
-        raise ValueError("Recieved some invaid STIL syntax for an Include: %s"%(value))
-
-
-    def __signalgroups_processor(self, value): 
-        func = "%s.__signalgroups_processor"%(self.__class__.__name__)
-        print("DEBUG: (%s): Starting .... " %(func))
-        #sys.exit(1)
-        pass
-
-    def __stil_processor(self, value): 
-        if self.debug: print("STIL STATEMENT: recieved: ", value)
-        RE_STIL_VERSION = re.compile("STIL\s+(?P<version>[\d\.]+)\s*;")
-        match = RE_STIL_VERSION.search(value)
-        if match: 
-            self.stil_version = match.group("version")
-            if self.debug: print("SITL VERSION: %s"%(self.stil_version))
-
-    def __header_processor(self, value): 
-        if self.debug: print("Header STATEMENT: recieved: ", value)
-        self.header = Header()
-
-        _interal_state = []
-        title_section = False
-        date_section = False
-        source_section = False
-
-        string_literal = False
-        lastchar  = ''
-        identifier = []
-        firstcurly = 0
-        for char in value: 
-
-            if char == "{" and not firstcurly: 
-                firstcurly = 1
-                continue 
-            if not firstcurly: continue 
-            # ----------------------------------------------------- S: String-literal
-            if  title_section or date_section or source_section: 
-                if string_literal: 
-                    if char == "\"" and lastchar != "\\": # Closing string-literal
-                        _str = "".join(identifier); identifier = []
-                        if title_section: 
-                            self.header.title = _str
-                            title_section = False
-                        elif date_section: 
-                            self.header.date = _str
-                            date_section = False
-                        elif source_section: 
-                            self.header.source = _str
-                            source_section = False
-                        else: 
-                            raise RuntimeError("no expecting a string literal ")
-                        string_literal = False
-                        continue 
-                    else: 
-                        identifier.append(char)
-                        continue 
-                # ----------------------------------------------------- Freelance: String-literal start. 
-                if char == "\"":  # TODO: could ad 'and state["notdone"]'
-                    string_literal = True
-                    continue
-            lastchar = char   
-            if char not in whitespace_character: 
-                if char != ";":
-                    identifier.append(char)
-            else: 
-                if len(identifier) == 0: continue 
-                thing = "".join(identifier); identifier = []
-                if thing == "Title": 
-                    title_section = True
-                if thing == "Date": 
-                    date_section = True
-                if thing == "Source": 
-                    source_section = True
-        """
-        #RE_TITLE = re.compile("Title\s+\"(?P<title>.*)\"\s*;")
-        RE_TITLE = re.compile("Title\s+\"(?P<title>.)\"\s*;")
-        match = RE_TITLE.search(value)
-        if match: 
-            self.header.title = match.group("title")
-            if self.debug: print("HEADER-TITLE: %s"%(self.header.title))
-    
-        RE_DATE= re.compile("Date\s+\"(?P<date>.*)\"\s*;")
-        match = RE_DATE.search(value)
-        if match: 
-            self.header.date = match.group("date")
-            if self.debug: print("HEADER-DATE: %s"%(self.header.date))
-
-        RE_SOURCE = re.compile("Source\s+\"(?P<source>.*)\"\s*;")
-        match = RE_SOURCE.search(value)
-        if match: 
-            self.header.source = match.group("source")
-            if self.debug: print("HEADER-SOURCE: %s"%(self.header.source))
-        """
-        RE_HISTORY = re.compile("History\s+\{[.*\s\S]+\}")
-        RE_ANN = re.compile("Ann\s*\{\*(?P<ann>.*)\*\}")
-        match = RE_HISTORY.search(value)
-        if match:
-            anns = RE_ANN.findall(value)
-            for ann in anns:
-                self.header.history.append(ann.strip()) 
-
-    def __signals_processor(self, value): 
-        func = "%s.__signals_processor"%(self.__class__.__name__)
-        if self.debug: print("DEBUG: %s: Starting ..."%(func)) 
-
-        self.signals = SB.Signals() 
-
-
-        # These will capture your basic signals: 
-        RE_signal_In = re.compile("(?P<name>[\"\w\[\]\.]+)\s+In\s*;")
-        RE_signal_Out = re.compile("(?P<name>[\"\w\[\]\.]+)\s+Out\s*;")
-        RE_signal_InOut = re.compile("(?P<name>[\"\w\[\]\.]+)\s+InOut\s*;")
-        RE_condensed_name = re.compile("(?P<base>[\"\w]+)\[(?P<num1>[\d]+)\.\.(?P<num2>[\d]+)\]")
-
-
-     
-        #RE_signal_withstuff = re.compile("(?P<name>[\w\[\]\.]+)\s+{(?P<details>[;\s\w\.]+)}")
-        RE_signal_cb_ScanOut = re.compile("(?P<name>[\"\w\[\]\.]+)\s+Out\s*\{\s*ScanOut\s*;\s*\}")
-        RE_signal_cb_ScanIn = re.compile("(?P<name>[\"\w\[\]\.]+)\s+In\s*\{\s*ScanIn\s*;\s*\}")
-
-        # TODO: These should probably be moved to the SignalsBlock module (along with entire processing field huh) 
-
-
-        # signals = SB.process(value)
-        # for i in range(len(signals)): 
-        #     self.signals.add(signals[i]) 
-
-
-        match = RE_signal_cb_ScanOut.findall(value)
-        if match: 
-            for signal_in in match:  
-                if '[' not in signal_in: 
-                    self.signals.add(SB.Signal(name=signal_in, type = "Out", fields={"ScanOut":True}))
-                elif '[' in signal_in: 
-                    condensedName = RE_condensed_name.search(signal_in)
-                    if not condensedName: 
-                        raise RuntimeError("Should have found condensed name. ")
-                    if condensedName: 
-                        baseName = condensedName.group("base")
-                        num1 = int(condensedName.group("num1"))
-                        num2 = int(condensedName.group("num2"))
-                        if num1 > num2: higher = num1; lower = num2
-                        elif num2 > num1: higher = num2; lower = num1 
-                        else:  raise RuntimeError("Numbers can equal each other.")
-                        i = lower 
-                        while i <= higher:
-                            name = "%s[%d]"%(baseName,i) 
-                            self.signals.add(SB.Signal(name=name, type = "Out", fields={"ScanOut":True}))
-                            i += 1
-
-        match = RE_signal_cb_ScanIn.findall(value)
-        if match: 
-            for signal_in in match:  
-                if '[' not in signal_in: 
-                    self.signals.add(SB.Signal(name=signal_in, type = "In", fields={"ScanIn":True}))
-                elif '[' in signal_in: 
-                    condensedName = RE_condensed_name.search(signal_in)
-                    if not condensedName: 
-                        raise RuntimeError("Should have found condensed name. ")
-                    if condensedName: 
-                        baseName = condensedName.group("base")
-                        num1 = int(condensedName.group("num1"))
-                        num2 = int(condensedName.group("num2"))
-                        if num1 > num2: higher = num1; lower = num2
-                        elif num2 > num1: higher = num2; lower = num1 
-                        else:  raise RuntimeError("Numbers can equal each other.")
-                        i = lower 
-                        while i <= higher:
-                            name = "%s[%d]"%(baseName,i) 
-                            self.signals.add(SB.Signal(name=name, type = "In", fields={"ScanIn":True}))
-                            i += 1
-
-        # Basic In pins  
-        match = RE_signal_In.findall(value)
-        if match: 
-            for signal_in in match:  
-                if '[' not in signal_in: 
-                    self.signals.add(SB.Signal(name=signal_in, type = "In"))
-                elif '[' in signal_in: 
-                    condensedName = RE_condensed_name.search(signal_in)
-                    if not condensedName: 
-                        raise RuntimeError("Should have found condensed name. ")
-                    if condensedName: 
-                        baseName = condensedName.group("base")
-                        num1 = int(condensedName.group("num1"))
-                        num2 = int(condensedName.group("num2"))
-                        if num1 > num2: higher = num1; lower = num2
-                        elif num2 > num1: higher = num2; lower = num1 
-                        else:  raise RuntimeError("Numbers can equal each other.")
-                        i = lower 
-                        while i <= higher:
-                            name = "%s[%d]"%(baseName,i) 
-                            self.signals.add(SB.Signal(name=name, type = "In"))
-                            i += 1
-        match = RE_signal_Out.findall(value)
-        if match: 
-            for signal_in in match:  
-                if '[' not in signal_in: 
-                    self.signals.add(SB.Signal(name=signal_in, type = "Out"))
-                elif '[' in signal_in: 
-                    condensedName = RE_condensed_name.search(signal_in)
-                    if not condensedName: 
-                        raise RuntimeError("Should have found condensed name. ")
-                    if condensedName: 
-                        baseName = condensedName.group("base")
-                        num1 = int(condensedName.group("num1"))
-                        num2 = int(condensedName.group("num2"))
-                        if num1 > num2: higher = num1; lower = num2
-                        elif num2 > num1: higher = num2; lower = num1 
-                        else:  raise RuntimeError("Numbers can equal each other.")
-                        i = lower 
-                        while i <= higher:
-                            name = "%s[%d]"%(baseName,i) 
-                            self.signals.add(SB.Signal(name=name, type = "out"))
-                            i += 1
-        match = RE_signal_InOut.findall(value)
-        if match: 
-            for signal_in in match:  
-                if '[' not in signal_in: 
-                    self.signals.add(SB.Signal(name=signal_in, type = "InOut"))
-                elif '[' in signal_in: 
-                    condensedName = RE_condensed_name.search(signal_in)
-                    if not condensedName: 
-                        raise RuntimeError("Should have found condensed name. ")
-                    if condensedName: 
-                        baseName = condensedName.group("base")
-                        num1 = int(condensedName.group("num1"))
-                        num2 = int(condensedName.group("num2"))
-                        if num1 > num2: higher = num1; lower = num2
-                        elif num2 > num1: higher = num2; lower = num1 
-                        else:  raise RuntimeError("Numbers can equal each other.")
-                        i = lower 
-                        while i <= higher:
-                            name = "%s[%d]"%(baseName,i) 
-                            self.signals.add(SB.Signal(name=name, type = "InOut"))
-                            i += 1
-
-                        self.signals.add_shorthand_ref(signal_in) # NOTE: Add short hand reference
-        return 
-
- 
-
-    def __in_free_state(self): 
-        return self.__states["FREE"]
-
-    def __new_top_level_state(self, value): 
-        if value not in self.TOPLEVEL.keys(): 
-            raise RuntimeError("Must be top level state: ", value) 
-        self.__states[value] = True
-        self.__states["FREE"] = False
-        self.__current_state = value
-    
-    def __close_current_state(self):
-        self.__states[self.__current_state] = False
-        self.__states["FREE"] = True
-        self.__current_state = "FREE"
-
-    def __get_current_state(self): 
-        return self.__current_state
-
-    def __current_state_ends_on_semicolon(self):
-        if self.TOPLEVEL[self.__current_state]["ending"] == ";":
-            return True
-        else: return False 
-
-    def __eat(self, value):
-        self.TOPLEVEL[self.__current_state]["processor"](value)
-
-
-    def parse(self,):
-        """ 
-
-        The implementation is made difficult due to the fact that: 
-            - it is single pass (with sub multi-passes)
-            - it processes the file in a line and character fashion.
-
-        There is basically : 
-          - Dont get caught in a string-lteral. 
-          -  We implement look-back methodolgies (we track the last char)
-        """
-        debug = self.debug
-        identifier = []
-        cbs = 0
-        start_curly_found  = 0
-        end_curly_found  = 0
-        skipline = False 
-        blockcomment = False
-        lastchar = ''
-        with open(self.sfp,"r") as sfd: 
-            for i, line in enumerate(sfd, start=1):
-                for j, char in enumerate(line, start=0):
-                    if debug: print("CHAR: %s"%(char))
-
-
-
-                    if blockcomment: 
-                        if char == "*" and lastchar == "/": # Nest block? Error if so . 
-                            print("Nest block..... Illegal %s"%(line))
-                            sys.exit(1)
-                        if char == "/" and lastchar == "*": 
-                            if debug: print("DEBUG: Block comment terminated")
-                            blockcomment = False  
-                        continue
-
-                    if char == "/" and lastchar == "/": 
-                        if debug: print("INLINE COMMENT FOUND %s"%(line))
-                        # NOTE: If inline comment, skip the rest of the line.
-                        skipline = True
-                    
-                    # Freelance: Start of block  
-                    if char == "*" and lastchar == "/": 
-                        if debug: print("DEBUG: BLOCK COMMENT FOUND %s"%(line))
-                        blockcomment = True
-                        lastchar = char
-                        continue # NOTE: IF you skip line while in if-branch, you must store last char
-
-                    # ------------------------------------------------------------------------------------
-                    if char == "/" and self.__in_free_state(): 
-                        lastchar = char
-                        continue
-
-
-
-                    # This is an important block here.... 
-                    #   - the last char gets stored, 
-                    #   - a sneaky look-ahead is used for finding inline comments
-                    #   - the current char is stored in the 'identifier' list. 
+                    #self._tplp = sutils.tpl_tagger(self._tplp, fileKey=include, file = include, debug = self.debug) 
+                    #tmpObjMap  = sutils.tplp_check_and_object_builder( tplp    = self._tplp,
+                    #                                           fileKey = include,
+                    #                                            debug   = self.debug,) 
                     # 
-                    # Thus the implication is that later code `~simply` worry about state. 
-                    #
-                    lastchar = char  # TODO: This seems like an improper spot to set the lastchar.
-                    if skipline: 
-                        skipline = False 
-                        break 
-                    elif char == "/" and self.__in_free_state(): 
-                        try : 
-                            if line[j+1] == "/":  # We found inline comment
-                                break  
-                        except:
-                            raise RuntimeError("Recieved weird line: %s"%(line)) 
-                        print("XXXXXXXXXXX Should never see this line...")
-                    else: 
-                        identifier.append(char)
+                    # ^^^ TODO: Need a way to examine store the string-representation for each 
+                    tmpObjMap = {}
+                    # include.
+                    if 'Include' in tmpObjMap: 
+                        includesList += tmpObjMap['Include']
+                        self._tplp[include] = tmpObjMap
+                    
+                    i += 1
+            
+        # TODO: Compare ALL Domain names for compatiability. 
+        #   ex.) All signalGroups names,
+        #   ex.) All Pattern and PatternBurst names. 
 
-                    # Count the curlies
-                    if char == "{":
-                        cbs +=1 
-                        if cbs == 1: start_curly_found = 1
-                    if char == "}": 
-                        cbs -= 1
-                        if cbs == 0: end_curly_found = 1
+        self.__parsed = True
 
-                    if self.__in_free_state(): 
-                        if char in whitespace_character or cbs == 1: 
-                            value = "".join(identifier).strip("{} \n") # NOTE: 'identifer' is not resest! 
-                            if value : # Meaning we have have stored actual chars, then flag the start state
-                                self.__new_top_level_state(value)
-                                continue
-                            else: pass 
-                    else: 
-                        if char == ";": 
-                            if self.__current_state_ends_on_semicolon():
-                                self.__eat("".join(identifier))
-                                self.__close_current_state()
-                                identifier = []
-                            else: pass
-                        elif end_curly_found: 
-                            self.__eat("".join(identifier))
-                            self.__close_current_state()
-                            identifier = []
-                            start_curly_found = 0
-                            end_curly_found = 0
-                        else:  # Else, continue becasue 'char' was just a char.
-                            continue
 
-        return 
+        # TODO: Should this method be a manager that splits in the variosu methods to 
+        # for a cleaner handliing? 
+        if self._all: 
+            print("\nNOTE: We are not handling 'all' at them moment")
+            sys.exit(1)
+            self._all_tokens  = sutils.lex(string = self._string, debug = self.debug)
+            self._all_sytbl   = STBL.SymbolTable(tokens=self._all_tokens, debug = self.debug)
+
+
+            if self.debug: 
+                print(self._all_sytbl)
+
+            # TODO: Sanity check
+            # TODO: If any includes - make the list 
+            if self._all_sytbl["Include"]: 
+                print("Include present")
+            else: 
+                print("Include not present")
 
 
 
+        
 
-if __name__ == "__main__": 
-    print("PySTIL.stil running ... \n")
 
-    if "-debug" in sys.argv: debug = True
-    else: debug = False 
-    so = STIL(sfp=sys.argv[-1], debug=debug)
+def greetings(): 
+    retstr = "Greetings from PySTIL.stil" + "\n"\
+        + KLU.greetings() + "\n" + STBL.greetings()
+    return retstr
+
+def _handle_cmd_args(): 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", help="Increase console logging", action="store_true")
+    parser.add_argument("--interactive", help="Interactive mode", action="store_true")
+    parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
+    parser.add_argument("--stil", help="STIL file path",)
+    args = parser.parse_args()
+
+
+
+    if not os.path.isfile(args.stil): 
+        raise ValueError("Invalid STIL file.")
+
+    return args
+
+if __name__ == "__main__":
+    args = _handle_cmd_args()
+
+
+
+    so = STIL(file = args.stil, all = args.all, debug = args.debug)
     so.parse()
 
 
 
-    print("")
-    print("STIL %s;"%(so.stil_version), "\n")
-    print(so.includes)
-    print(so.header, "\n")
-    print(so.signals, "\n")
 
 
+    if args.interactive: 
+        print("TODO: Need to implement interactive mode....")
 
+    if args.debug: 
+        print("DEBUG: Exiting PySTIL.stil")
 
-
-    print(utils.greetings())
