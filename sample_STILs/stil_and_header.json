@@ -1,0 +1,13 @@
+{
+    "STIL" : "1.0",
+    "Header" : {
+        "Title" : "Simple Title",
+        "Date"  : "Thursday April 23rd 2020",
+        "Source" : "Manually Generated", 
+        "History" : [
+            {"Ann" : "Annocation 1"},
+            {"Ann" : "Annocation 2"}
+        ] 
+    }
+
+}
