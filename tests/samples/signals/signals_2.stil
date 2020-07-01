@@ -1,0 +1,30 @@
+STIL 1.0; 
+
+
+Signals {
+    DIR In; 
+    A0 InOut;
+    A1 InOut; 
+    A2 InOut; 
+    A3 InOut; 
+    A[0..7] InOut;
+    B[0..7] InOut;
+
+    x[0..3] InOut; 
+    scan1 Out {ScanOut;}
+}
+
+SignalGroups {
+    abus_pins = 'A[0] + A[1] + A[2] + A[3] + A[4] + A[5] + A[6] + A[7]'; 
+    bbus_pins = 'B[0] + B[1] + B[2] + B[3] + B[4] + B[5] + B[6] + B[7]'; 
+    bbus_odd  = 'bbus_pins - B[0] - B[2] - B[4] - B[6]'; 
+    xbus      = 'x[0]+x[1]+x[2]+x[3]' {Base Hex wW; Alignment LSB;}
+    scan_out  = 'scan1' {ScanOut 289; Base Hex LHX; Alignment MSB;}
+}
+
+SignalGroups quality {
+    abus_pins = 'A[0..7]'; 
+    bbus_pins = 'B[0..7]'; 
+    xbus      = 'x[0..3]'; 
+}
+
