@@ -1,110 +1,10 @@
 import sys, os, re, argparse
 from collections import OrderedDict
-
-
 import KeyLookUps as KLU
 import SymbolTable as STBL
 import STILutils as sutils
-
-
-class Signal(object): 
-    def __init__(self, *args, **kwargs): 
-        if "file" in kwargs: self._file = kwargs["file"] 
-        else: self._file = None
-        # TODO: Need a reference to the file is was found in. 
-        # From the perspective of the a STIL translation, this would 
-        # not be important, however, for reporting or tracing, we 
-        # need to be clear which file this block is correspondants to. 
-        
-        
-
-
-    @staticmethod
-    def create_signals(string, debug=False): 
-        func = "Signals.create_signals"
-        tokens = sutils.lex(string=string, debug=debug)
-        sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
-
-        if debug: 
-            print("Tokens: ", tokens)
-            print("SymbolTable: ", sytbl)
-        # TODO: Create each object
-        #  - Need to do this by eating the tokens (use symbolt table to help you)
-
-        signals = {}
-        typeList = ["In", "Out", "InOut", "Supply", "Psuedo"]
-
-        token = {}
-        signalName = ""
-        signalType = ""
-        i = 2; end = len(tokens) - 1; cbs = 0; 
-
-        while i <= end: 
-            token = tokens[i]
-
-            if token['tag'] == "}": 
-                cbs -= 1
-                if cbs == 0: 
-                    signalsName = ""; signalType = "";
-                    i += 1; continue 
-
-            if cbs == 1: 
-                if token['tag'] == "ScanIn": 
-                    if tokens[i+1]['tag'] == ';': 
-                        signals[signalName] = {"type":signalType,
-                                                   "ScanIn":True}
-                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-                        i+=1; continue 
-                    else: 
-                        raise RuntimeError("Not ready to handle decimal scans")
-                        # TODO: Else, use symbol table to grab the next token index 
-                        # of the semicolon.
-                if token['tag'] == "ScanOut": 
-                    if tokens[i+1]['tag'] == ';': 
-                        signals[signalName] = {"type":signalType,
-                                                   "ScanOut":True}
-                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-                        i+=1; continue 
-                    else: 
-                        raise RuntimeError("Not ready to handle decimal scans")
-                        # TODO: Else, use symbol table to grab the next token index 
-                        # of the semicolon.
-
-
-            if cbs == 0: 
-                if token['tag'] == "identifier": 
-                    signalName = token['token']
-                    if tokens[i+1]['tag'] not in typeList: 
-                        print("Current: ", i, token)
-                        print("Next   : ", i+1, tokens[i+1])
-                        print("  - ", tokens[i+1]['tag'], type(tokens[i+1]['tag']))
-                        raise ValueError("Invalid syntax of Signals")
-
-                    else: 
-                        signalType = tokens[i+1]['tag']
-                        if tokens[i+2]['tag'] == ';': 
-                            if signalName in signals: 
-                                raise RuntimeError("Signal %s is already defined"%(signalName))
-                                # ^^^ TODO: Is this valid? 
-                            else: 
-                                signals[signalName] = {"type":signalType}
-                                print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-
-                                signalsName = ""; signalType = "";
-                                i += 3; continue 
-                        elif tokens[i+2]['tag'] == "{": 
-                            cbs += 1 
-                            i += 3; continue 
-                        else: 
-                            raise RuntimeError("Invalid syntax (i+2 != ; || {)")
-                else: 
-                    raise RuntimeError("Invalid syntax (cbs == 0 but not identifier)")
-            i += 1
-
-        # TODO: return signals? 
-            
-
-       
+import Signals
+import SignalGroups
 
 
 class STIL(object): 
@@ -150,37 +50,81 @@ class STIL(object):
         # maye cause many issues later on . 
 
         self.__parsed = False 
-        self.__signals = []
+        self.__signals = None # NOTE: Will be an instance of 'Signals' class. 
+        self.__signalGroups = [] # NOTE: List of SignalGroups objects.
 
 
 
-    def get_signalgroups(self, ): 
+    def get_signalgroups(self, domain="", ): 
+        """
+        NOTE: domain is not a regex. It is a direct match.
+        """
+        func = "%s.get_signalgroups"%(self.__class__.__name__)
         if not self.__parsed: 
             raise RuntimeError("Make sure to parse STIL object before making queries.")
-        retList = []
-        for fileKey, value in self._tplp.items(): 
-            #print(value)
-            if "SignalGroups" in value["ObjectMap"]: 
-                print("")
-                for entry in value["ObjectMap"]["SignalGroups"]: 
-                    retList.append(entry["name"])
-        return retList 
+
+        if self.__signalGroups: 
+            if domain: 
+                for entity in self.__signalGroups: 
+                    if domain == entity.get_domain():
+                        return entity
+                return None 
+            if not domain: 
+                return self.__signalGroups
+
+        # Create the Signal instances by referring to the tplp. 
+        for fileKey, tplp in self._tplp.items(): 
+            if "SignalGroups" in tplp: 
+                for entry in self._tplp[fileKey]["SignalGroups"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    print("DEBUG: (%s): %s"%(func, entry))
+                    self.__signalGroups.append(SignalGroups.SignalGroups.create_signalGroups(tmp, domainName=entry['name'], file=fileKey, debug = self.debug))
+                    #self.__signalGroups[-1].file = fileKey 
+                    # TODO: Should fileKey be passed in at 'create_signals'? 
+
+        if domain: 
+            for entity in self.__signalGroups: 
+                if domain == entity.get_domain():
+                    return entity
+            return None 
+
+        if not domain: 
+            return self.__signalGroups
+
+        return self.__signalGroups 
+
+    # TODO: We need to remove the entry of object map and instead have its entries 
+    # replace the orginal values in tplp. Otherwise, it is too tedious to 
+    # remembet which entries have an object map setting and which ones do not. 
+    # 
+    # Also, only assume that you get 'start' and 'end' values at minimum.  
+    # This leads to a dicussion of what exactly should we always run for sanity 
+    # checks (bascially, what are the mimimums).
+    # TODO: Make every modular (python : pass by reference )
+    # 
 
     def get_signals(self, ): 
-        # TODO: This should be returning a list of Signal objects
-        # Because there can only be one Signals block per translation, 
-        # it lends itself nicely to the implementation of a list of class
-        # return.
+        """ 
+        This method will return the 'Signals' class object. 
+        Because, there is only one Signals blocks per translation according to the
+        standard, we return a single object.
+        """
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+
         if self.__signals: return self.__signals 
 
-        print("\nXXXX")
         # Create the Signal instances by referring to the tplp. 
         for fileKey, value in self._tplp.items(): 
             #if "Signals" in self._tplp[fileKey]: 
             for entry in self._tplp[fileKey]["Signals"]:   
-                print(entry)
                 tmp = self._string[entry['start']:entry['end'] + 1] # TODO: Not proper for includes.
-                listOfSignals = Signal.create_signals(tmp, debug = self.debug)
+                self.__signals = Signals.Signals.create_signals(tmp, file = fileKey, debug = self.debug)
+                # TODO: Should fileKey be passed in at 'create_signals'? 
+                return self.__signals 
+        # TODO: Becasue we return after the first instance, during the 
+        # sanity checking at parse, we must ensure that all other Signal
+        # entries are deleted. 
 
 
     def parse(self, ): 
@@ -208,7 +152,7 @@ class STIL(object):
                                                              fileKey = fileKey,
                                                              debug   = self.debug,) 
 
-            self._tplp[fileKey]["ObjectMap"] = objectMap
+            #self._tplp[fileKey]["ObjectMap"] = objectMap
             # TODO: (MAYBE), Link the tplp and objectMap: self._tplp[fileKey]['ObjectMap'] = objectMap
             # Note, the problem with linking the object map to the tplp is that we have a bunch of 
             # redundant information noww. 
@@ -218,7 +162,8 @@ class STIL(object):
             #  ex.) self.__tplp[fileKey][<toplevelblock>] = objectMap[<toplevelblock>]
             for block in self._tplp[fileKey]: 
                 if block in objectMap: 
-                    print(block, self._tplp[fileKey][block], objectMap[block])
+                    #print(block, self._tplp[fileKey][block], objectMap[block])
+                    self._tplp[fileKey][block] = objectMap[block]
                 else: 
                     print("Keeping old instance for: ", block)
 
@@ -297,8 +242,6 @@ def _handle_cmd_args():
     parser.add_argument("--stil", help="STIL file path",)
     args = parser.parse_args()
 
-
-
     if not os.path.isfile(args.stil): 
         raise ValueError("Invalid STIL file.")
 
@@ -306,16 +249,8 @@ def _handle_cmd_args():
 
 if __name__ == "__main__":
     args = _handle_cmd_args()
-
-
-
     so = STIL(file = args.stil, all = args.all, debug = args.debug)
     so.parse()
-
-
-
-
-
     if args.interactive: 
         print("TODO: Need to implement interactive mode....")
 
