@@ -2,10 +2,6 @@ import os, sys
 import PySTIL.stil as pystil
 
 debug = True
-#path = """C:\Users\max.sbabo\Documents\GitHub\PySTIL\PySTIL\tests\samples\signals\signals_1.stil"""
-
-
-
 
 if len(sys.argv) < 2: 
     path = os.path.join("C:\\", "Users", "max.sbabo","Documents","GitHub",
@@ -23,23 +19,34 @@ so.parse()
 # ^^^ TODO: Or, we can check a standard location and read the config file. 
 
 
+signals = so.get_signals()
+# NOTE: If this returns a single object, then get_signalGroups should return a list fo objects
+print("Signal: ")
+print("-------")
+print(signals.string()) # NOTE: Could override the __str__ function
+print("Signals.get_names()")
+print("  ", signals.get_names())
+print("Signal.get_names(types=[\"Out\"])")
+print("  ", signals.get_names(types=["Out"]))
+print("Signals.get_names(regex=\"D\d\", types[\"In\"])")
+print("  ", signals.get_names(regex = "D\d", types=["In"]))
 
+
+print("\nSignalGroups:")
 siggrps  = so.get_signalgroups()
-sigNames = so.get_signals()
+print(siggrps)
+# ^^^ NOTE: That here we are returning a list of sigalGroup names. 
+# This should ne questioned as to why it is different than the return 
+# on the so.get_signals(). That is because, the STIL standard only 
+# allows a signle STIL instance; whereas many SignalGroups blocks can 
+# be used in a translation. 
 
 
-# so.get_signals()
-# - We can already imagine that the multiple parse methods are going to 
-#   present issues. When using 'all' we deal directly with the tokens list
-#   and the Symbol table. However, when dealing with the tplp, we are dealing 
-#   first with the tplp dictionary, then moving onto to many tokens and 
-#   symbolTables. 
-# 
-#   The second method can easily accomidate the first, that is, simply 
-#   iterate over the all the entries in the tplp. 
-# 
-# - If many Signal blocks, only the first one should be printed.
-
+GLOBAL = ' '
+instance = so.get_signalgroups(domain = GLOBAL)
+print(instance.get_groups(signal='B[1]'))
+# TODO: or regex with 'B\[1\]'
+# TOD): also, list of regex....
 
 
 
