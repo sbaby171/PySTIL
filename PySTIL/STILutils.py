@@ -245,6 +245,9 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
     token  = [] 
     stack = [] # Should only be of Toplevel Keywords and never more than one character.
     
+    UserKeywords = []
+    UserFunctions = []
+
     for i,char in enumerate(test, start = 0):  
         if debug: print("DEBUG: [%s] %s"%(i,char))
 
@@ -311,7 +314,26 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                 
             if char == ';': 
                 if cbs == 0: 
-                    tplp[fileKey][stack.pop()][-1]['end'] = i
+                    entity = stack.pop()
+                    if entity == "UserKeywords": 
+                        print("UserKeywords : %s"%(entity))
+                        _start = tplp[fileKey][entity][-1]['start']
+                        tmp = string[_start:i]
+                        r = re.compile('\w+')
+                        match = r.findall(tmp)
+                        for m in match[1:]:
+                            UserKeywords.append(m) 
+                        print(UserKeywords)
+                    elif entity == "userFunctions": 
+                        print("UserFunctions : %s"%(entity))
+                        _start = tplp[fileKey][entity][-1]['start']
+                        tmp = string[_start:i]
+                        r = re.compile('\w+')
+                        match = r.findall(tmp)
+                        for m in match[1:]:
+                            UserFunctions.append(m) 
+                        print(UserFunctions)
+                    tplp[fileKey][entity][-1]['end'] = i
                     stack = []; token = []
                     states["top-level-element"] = False 
                     states["free"] = True
@@ -365,7 +387,8 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
             # This is bascially a state-dependent check, thus we may be able to 
             # to remove this if we handle this in the States-Section. 
 
-            if _token not in KLU.TopLevel.keywords: raise RuntimeError("Not sure: token: %s, stack :%s"%(_token, stack))
+            if ( (_token not in KLU.TopLevel.keywords) and (_token not in UserKeywords) and (_token not in UserFunctions)):
+                    raise RuntimeError("Not sure: token: %s, stack :%s"%(_token, stack))
             else: 
                 # If we maintain the stack is only ONE or NONE element, then 
                 # we can check state simply by checking the len of stack rather
@@ -377,6 +400,9 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                 if stack[-1] in tplp[fileKey]: 
                     tplp[fileKey][_token].append({'start': i-len(_token),'end':-1} )
                 else: tplp[fileKey][_token] = [{'start':i-len(_token),'end':-1}]                                   
+
+                if debug: 
+                    print(tplp)
                 lastchar = char; continue  
         
         elif char == "{": 
@@ -393,6 +419,7 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                                 
                 #print(block, len(block), _token)
                 if _token not in KLU.TopLevel.keywords: raise RuntimeError("Not sure: token: %s, stack :%s"%(_token, stack))
+
                 else: # Here
                     # If we maintain the stack is only ONE or NONE element, then 
                     # we can check state simply by checking the len of stack rather
@@ -597,7 +624,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         print("\nSanity Checking SignalGroups blocks...")
         singleGlobal = False
         RE_SignalGroups_global = re.compile("^SignalGroups\s*\{")
-        RE_SignalGroups_DomainName_no_dqoutes = re.compile("^SignalGroups\s+(?P<name>\w+)\s*\{")
+        RE_SignalGroups_DomainName_no_dqoutes   = re.compile("^SignalGroups\s+(?P<name>\w+)\s*\{")
         RE_SignalGroups_DomainName_with_dqoutes = re.compile("^SignalGroups\s+(?P<name>\".*\")\s*\{")
         
         for indexes in tplp[fileKey]['SignalGroups']: 
