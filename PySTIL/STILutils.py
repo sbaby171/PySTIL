@@ -324,7 +324,7 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                         for m in match[1:]:
                             UserKeywords.append(m) 
                         print(UserKeywords)
-                    elif entity == "userFunctions": 
+                    elif entity == "UserFunctions": 
                         print("UserFunctions : %s"%(entity))
                         _start = tplp[fileKey][entity][-1]['start']
                         tmp = string[_start:i]
