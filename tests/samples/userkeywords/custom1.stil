@@ -1,0 +1,64 @@
+STIL 1.0 {
+    Design D22;
+    DCLevels 2002;
+}
+
+UserKeywords CustomExpansion;
+
+CustomExpansion {
+    version '1.0'; 
+    IO_MODE{
+        SubModes {
+            'pad1' 'pad1-tag';
+            'pad2' 'pad2-tag';
+        }
+        UpmRevision {
+            ANALOG '/home/path/analog.txt';
+            PADS '/home/path/pads.vhd';
+        }
+    }
+    ATE_CONTROL {
+        IobistCells {
+            fb {
+                GDDR {
+                    pad1 '{block1} {block2}';
+                }
+            }
+        }
+        LBConfig 'NA'; 
+        TestFeatures 'myTestFeatures';
+    }
+    DC_Expansion {
+        UpmRevision {
+            ANALOG 'other/path#1';
+            PADS 'other/path#1';
+        }
+        DpsLevel {
+            dpslevel_1 {
+                V1V8 '1.72V';
+            }
+            dpslevel_2 {
+                V1V8 '1.72V';
+                VDD '0.8V';
+            }
+        }
+    }
+    TEST_CONDITION {
+        FTC {
+            start_label '';
+            end_label 'end_label';
+        }
+        ShortInit '-9';
+        End_label 'V1_092343';
+    }
+    SRM_PROCESSING_INFO {
+        CycleCount {
+            p_default 228493; 
+        }
+    }
+    STIL_PROCESSING_CONTROL {
+        PatAuditor '0';
+    }
+}
+
+

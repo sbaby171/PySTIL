@@ -1,0 +1,16 @@
+STIL 1.0; 
+UserKeywords tchn diepad; 
+UserFunctions abs_min abs_max;
+
+tchn {
+    version '1.0';
+    SubBlock {
+        somthing 10;
+    }
+}
+diepad  {
+    mm l;
+}
+abs_min {
+    x + y; 
+}

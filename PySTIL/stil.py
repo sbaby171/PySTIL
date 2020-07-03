@@ -6,6 +6,8 @@ import STILutils as sutils
 import Signals
 import SignalGroups
 
+# TODO: A key a question is to attached the APIs to the STIL object
+#       or a set of APIs? 
 
 class STIL(object): 
 
@@ -39,7 +41,6 @@ class STIL(object):
             self._all = True
             self._tplp = None 
         else: 
-            print("TODO: TPLP.")
             self._all = False
             self._tplp = OrderedDict()
         # ^^^ TODO: There is an honest question as to whether or not, we really 
@@ -47,11 +48,35 @@ class STIL(object):
         # you can the need to create all the SymbolTables for each block in the 
         # toplevel-pointer dictionary. However, it is much easier to maintain
         # a single method of operation. Settings up this fork so early on 
-        # maye cause many issues later on . 
+        # maye cause many issues later on. 
 
         self.__parsed = False 
         self.__signals = None # NOTE: Will be an instance of 'Signals' class. 
         self.__signalGroups = [] # NOTE: List of SignalGroups objects.
+        self.__userKeywords = [] # NOTE: List of string elements 
+
+
+
+    def get_userkeyword(self, key): 
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+
+        if self.__userKeywords: return self.__userKeywords
+        
+        retlist = []
+        for fileKey in self._tplp: 
+            if key in self._tplp[fileKey]: 
+                for instance in self._tplp[fileKey][key]: 
+                    start = instance['start']
+                    end = instance['end']
+                    tmp = self._string[start:end]
+                    retlist.append(tmp)
+        self.__userKeywords = retlist 
+        return self.__userKeywords
+        
+
+
+                
 
 
 
@@ -92,16 +117,6 @@ class STIL(object):
             return self.__signalGroups
 
         return self.__signalGroups 
-
-    # TODO: We need to remove the entry of object map and instead have its entries 
-    # replace the orginal values in tplp. Otherwise, it is too tedious to 
-    # remembet which entries have an object map setting and which ones do not. 
-    # 
-    # Also, only assume that you get 'start' and 'end' values at minimum.  
-    # This leads to a dicussion of what exactly should we always run for sanity 
-    # checks (bascially, what are the mimimums).
-    # TODO: Make every modular (python : pass by reference )
-    # 
 
     def get_signals(self, ): 
         """ 
@@ -152,25 +167,18 @@ class STIL(object):
                                                              fileKey = fileKey,
                                                              debug   = self.debug,) 
 
-            #self._tplp[fileKey]["ObjectMap"] = objectMap
-            # TODO: (MAYBE), Link the tplp and objectMap: self._tplp[fileKey]['ObjectMap'] = objectMap
-            # Note, the problem with linking the object map to the tplp is that we have a bunch of 
-            # redundant information noww. 
-            # 
-            # TODO: Becaue of this redundant information, it may be better to *replace* the 
-            # the entry in tplp, for a given block, with the contents of the objct map. 
-            #  ex.) self.__tplp[fileKey][<toplevelblock>] = objectMap[<toplevelblock>]
+            # Relpace the blocks with those in the
             for block in self._tplp[fileKey]: 
                 if block in objectMap: 
-                    #print(block, self._tplp[fileKey][block], objectMap[block])
                     self._tplp[fileKey][block] = objectMap[block]
-                else: 
-                    print("Keeping old instance for: ", block)
+                else: pass  # Keep original grouping. 
 
             if self.debug:
-                print("\nDEBUG: (%s): Obect Map on first pass: %s"%(func, fileKey))
-                for key, value in objectMap.items(): 
-                    print("DEBUG:   - %s: %s"%(key, value))
+                print("\nDEBUG: (%s): tplp after first layer sanity check: %s"%(func, fileKey))
+                for block in self._tplp[fileKey]: 
+                    print("DEBUG:  - %s:  %s"%(block, self._tplp[fileKey][block]))
+                #for key, value in objectMap.items(): 
+                #    print("DEBUG:   - %s: %s"%(key, value))
             
             # (3): If Includes present, we must recusively checks these, 
             if "Include" in objectMap: 
@@ -188,6 +196,9 @@ class STIL(object):
                     #tmpObjMap  = sutils.tplp_check_and_object_builder( tplp    = self._tplp,
                     #                                           fileKey = include,
                     #                                            debug   = self.debug,) 
+                    # 
+                    # sanity check: 
+                    # TODO: 
                     # 
                     # ^^^ TODO: Need a way to examine store the string-representation for each 
                     tmpObjMap = {}
@@ -239,9 +250,10 @@ def _handle_cmd_args():
     parser.add_argument("--debug", help="Increase console logging", action="store_true")
     parser.add_argument("--interactive", help="Interactive mode", action="store_true")
     parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
-    parser.add_argument("--stil", help="STIL file path",)
+    parser.add_argument("stil", help="STIL file path",)
     args = parser.parse_args()
 
+   
     if not os.path.isfile(args.stil): 
         raise ValueError("Invalid STIL file.")
 
@@ -253,6 +265,9 @@ if __name__ == "__main__":
     so.parse()
     if args.interactive: 
         print("TODO: Need to implement interactive mode....")
+        print(so._tplp)
+
+
 
     if args.debug: 
         print("DEBUG: Exiting PySTIL.stil")
