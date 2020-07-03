@@ -316,23 +316,23 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                 if cbs == 0: 
                     entity = stack.pop()
                     if entity == "UserKeywords": 
-                        print("UserKeywords : %s"%(entity))
                         _start = tplp[fileKey][entity][-1]['start']
                         tmp = string[_start:i]
                         r = re.compile('\w+')
                         match = r.findall(tmp)
                         for m in match[1:]:
-                            UserKeywords.append(m) 
-                        print(UserKeywords)
+                            if m in UserKeywords: pass
+                            else: UserKeywords.append(m) 
+                        tplp[fileKey][entity][-1]['keys'] = match[1:]
                     elif entity == "UserFunctions": 
-                        print("UserFunctions : %s"%(entity))
                         _start = tplp[fileKey][entity][-1]['start']
                         tmp = string[_start:i]
                         r = re.compile('\w+')
                         match = r.findall(tmp)
                         for m in match[1:]:
-                            UserFunctions.append(m) 
-                        print(UserFunctions)
+                            if m in UserFunctions: pass
+                            else: UserFunctions.append(m) 
+                        tplp[fileKey][entity][-1]['keys'] = match[1:]
                     tplp[fileKey][entity][-1]['end'] = i
                     stack = []; token = []
                     states["top-level-element"] = False 
@@ -445,6 +445,12 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
         # checking is the char in an alphanumeric.....
         lastchar = char      
 
+
+    #if UserKeywords: 
+    #    print(tplp[fileKey]["UserKeywords"])
+    #    tplp[fileKey]["UserKeywords"]["keys"] = UserKeywords
+    #if UserFunctions: 
+    #    tplp[fileKey]["UserKeywords"]["keys"] = UserFunctions
     return tplp
 
 
