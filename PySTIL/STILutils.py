@@ -523,6 +523,11 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         OBJECT: TODO 
           ex.) TODO
 
+    Timing: 
+        CHECKS: TODO
+
+        OBJECT: TODO
+
             
       
     """
@@ -708,13 +713,9 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         timing = None; dclevels = None; dcsets = None; patternburst = None; 
         
         for indexes in tplp[fileKey]['PatternExec']: 
-            
             execName = None; category = None; selector = None; 
             timing = None; dclevels = None; dcsets = None; patternburst = None; 
-            
             tmp = string[indexes['start']:indexes['end'] + 1]
-            #print(tmp)
-            
             # Match for global:
             match = RE_PatternExec_global.search(tmp)       
             if match:
@@ -723,10 +724,8 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                 else:
                     singleGlobal = True
                     execName = KLU.References.GLOBAL
- 
             match = RE_PatternExec_DomainName_no_dqoutes.search(tmp)       
             if match: execName = match.group("name")
-
             match = RE_PatternExec_DomainName_with_dqoutes.search(tmp)       
             if match: execName = match.group("name")
             
@@ -763,10 +762,6 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                                               'DCLevels':dclevels,
                                               'DCSets': dcsets,
                                               'PatternBurst':patternburst})
-    
-    
-            
-
     # 17 PatternBurst block: 
     # ----------------------
     # Because the PatternBurst is relatively small, but highly variable in its structure,
@@ -837,6 +832,60 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                 continue 
 
     # TODO: Other toplevel checks
+
+    # 18 Timing Block: 
+    # ----------------
+    # "Timing domain names: optional. If no name is present, then the timing
+    # defined in this block is applied to any block without references to n
+    # named timing."
+    #
+    if 'Timing' in tplp[fileKey]:
+        objectMap['Timing'] = []
+        print("\nSanity Checking Timing blocks...")
+        
+        RE_Timing_global = re.compile("^Timing\s*\{")
+        RE_Timing_DomainName_no_dqoutes = re.compile("^Timing\s+(?P<name>\w+)\s*\{")
+        RE_Timing_DomainName_with_dqoutes = re.compile("^Timing\s+(?P<name>\".*\")\s*\{")
+        domainNames = [RE_Timing_global, RE_Timing_DomainName_no_dqoutes, RE_Timing_DomainName_with_dqoutes]
+        singleGlobal = False
+        _foundNames = []
+
+
+        for indexes in tplp[fileKey]['Timing']: 
+            timingBlockName = ""
+            tmp = string[indexes['start']:indexes['end'] + 1]
+
+            # Grab timing block name. 
+            i = 0; iend = len(domainNames) - 1
+            while i <= iend:
+                match = domainNames[i].search(tmp)
+                if match: 
+                    if i == 0: # Global name
+                        if singleGlobal: raise RuntimeError("Found second global timing block")
+                        singleGlobal = True
+                        timingBlockName = KLU.References.GLOBAL
+                        if timingBlockName in _foundNames: 
+                            raise RuntimeError("Found two timing blocks of the same name")
+                        break 
+                    elif i >= 1: 
+                        timingBlockName = match.group("name")
+                        if timingBlockName in _foundNames: 
+                            raise RuntimeError("Found two timing blocks of the same name")
+                        break
+                i += 1
+            # Other checks 
+            # NOTE: At this point, it is a design question if we wish to 
+            # dig deeper. That is, if we wish to mark all the start and stop 
+            # chars of the WaveformTable, SubWaveforms, and Waveforms.
+            # For now, I will leave that to the query.  
+            objectMap['Timing'].append({'name': timingBlockName,
+                                             'start':indexes['start'], 
+                                              'end':indexes['end'],} )  
+
+                 
+
+
+        
 
     return objectMap
 

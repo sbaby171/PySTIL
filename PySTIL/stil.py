@@ -57,6 +57,14 @@ class STIL(object):
 
 
 
+    # NOTE: "The standard doesn't explicitly allow/disallow quoted user 
+    # keywords. However, we do NOT ALLOW that since user keywords are 
+    # intended to 'extend' standard STIL language keywords, in other words
+    # create a user version of STIL. STIL STIL doesnt allow auoted keywords 
+    # we assumed its reasonable to require UserKeywords to be used without
+    # quotes as well, to make user version of STIL language look similiar 
+    # to the core STIL."
+
     def get_userkeyword(self, key): 
         if not self.__parsed: 
             raise RuntimeError("Make sure to parse STIL object before making queries.")
@@ -190,15 +198,15 @@ class STIL(object):
                 while i < len(includesList): 
                     include = includesList[i]['file']
                     print("DEBUG: (%s): TODO: Checking the following include file: %s"%(func, include))
-
-
                     #self._tplp = sutils.tpl_tagger(self._tplp, fileKey=include, file = include, debug = self.debug) 
                     #tmpObjMap  = sutils.tplp_check_and_object_builder( tplp    = self._tplp,
                     #                                           fileKey = include,
                     #                                            debug   = self.debug,) 
                     # 
                     # sanity check: 
-                    # TODO: 
+                    # TODO: Check all domain names across necessary fields - 
+                    # remember the tpl checker method is checking for domain on within each 
+                    # STIL os here we need to be checking across the entire Stil.
                     # 
                     # ^^^ TODO: Need a way to examine store the string-representation for each 
                     tmpObjMap = {}
