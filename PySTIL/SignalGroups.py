@@ -1,6 +1,7 @@
 import re
 import STILutils as sutils
 import SymbolTable as STBL
+import KeyLookUps as KLU
 
 
 
@@ -36,10 +37,7 @@ class SignalGroups(object):
             print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
 
         signalGroups = {}
-        token = {}
         signalGroupName = ""
-        signalGroupContent = []
-
 
         if not domainName:
             _start, _end = sytbl.get_next_set(0, 'curly-brackets')
@@ -56,7 +54,6 @@ class SignalGroups(object):
         while i <= end: 
             signalGroupName = ""
             signalGroupSignals = []
-            signalGroupProperties = {}
             _start, _end = singleQuotePairs[i]
             # TODO: Can place some sanity checks here: length= 1|3|5|etc. even not allowed
 
@@ -110,7 +107,6 @@ class SignalGroups(object):
 
             # NOTE: Check right-hand side: 
             if tokens[_end+1]['tag'] == ';': 
-                print("Finished")
                 if signalGroupName == "": raise RuntimeError("SignalGroup name is not set.")
                 if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                 signalGroups[signalGroupName] = {"signals": signalGroupSignals, 

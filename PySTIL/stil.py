@@ -52,6 +52,13 @@ class STIL(object):
 
         self.__parsed = False 
         self.__signals = None # NOTE: Will be an instance of 'Signals' class. 
+        self.signal = None 
+        # NOTE: Because there can only be a single Signal block per stil 
+        # translaion
+        
+
+
+
         self.__signalGroups = [] # NOTE: List of SignalGroups objects.
         self.__userKeywords = [] # NOTE: List of string elements 
 
@@ -148,6 +155,8 @@ class STIL(object):
         # TODO: Becasue we return after the first instance, during the 
         # sanity checking at parse, we must ensure that all other Signal
         # entries are deleted. 
+    
+
 
 
     def parse(self, ): 

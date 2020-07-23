@@ -42,6 +42,19 @@ class Signals(object):
                         self._shorthand[signal].append("%s[%d]"%(base,i))
                 else: raise ValueError("Invalid syntax for '%s'"%(signal))
 
+
+    # NOTE: Make 'Signals' iterable: 
+    def __iter__(self,): 
+        for signal in self._mapping: 
+            yield signal
+
+    def get_size(self,): 
+        mappingLength = len(self._mapping)
+        for entry in self._shorthand: 
+            mappingLength -= 1
+            mappingLength += len(self._shorthand[entry])
+        return mappingLength
+
     def string(self, ): 
         retstr = []
         for signal in self._mapping: 
@@ -53,7 +66,27 @@ class Signals(object):
                 retstr.append("  - %s: %s"%(signal, self._shorthand[signal]))
         return "\n".join(retstr)
 
+
+
     def get_names(self, regex="", types=[]): 
+        """
+        Return a list of signal-dictionaries, based on the parameters
+        of interest.
+
+        Parameters: 
+          regex : string
+            Regex pattern that will be applied during search. 
+         
+          types: list of Signal types. 
+            Types will be applied during search. 
+            Options: In, Out, InOut, Supply, Pseudo. 
+        
+        Returns: 
+          List of signal-dictionaries. 
+
+          A signal dictionary is merely a dictionary representation
+          of a STIL signal definition.  
+        """
         # Easy, simply return all names 
         if not regex and not types: 
             return list(self._mapping.keys())
@@ -101,7 +134,7 @@ class Signals(object):
                     if tokens[i+1]['tag'] == ';': 
                         signals[signalName] = {"type":signalType,
                                                    "ScanIn":True}
-                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                        if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
                         i+=1; continue 
                     else: 
                         raise RuntimeError("Not ready to handle decimal scans")
@@ -111,7 +144,7 @@ class Signals(object):
                     if tokens[i+1]['tag'] == ';': 
                         signals[signalName] = {"type":signalType,
                                                    "ScanOut":True}
-                        print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                        if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
                         i+=1; continue 
                     else: 
                         raise RuntimeError("Not ready to handle decimal scans")
@@ -134,7 +167,7 @@ class Signals(object):
                                 # ^^^ TODO: Is this valid? 
                             else: 
                                 signals[signalName] = {"type":signalType}
-                                print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                                if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
 
                                 signalsName = ""; signalType = "";
                                 i += 3; continue 
