@@ -60,6 +60,8 @@ class STIL(object):
 
 
         self.__signalGroups = [] # NOTE: List of SignalGroups objects.
+        self._SignalGroupsBlocks = None
+    
         self.__userKeywords = [] # NOTE: List of string elements 
 
 
@@ -94,6 +96,25 @@ class STIL(object):
                 
 
 
+    # TODO: Which API is better? I am leaning towards no 'get_'
+    def signalGroups(self,): 
+        func = "%s.signalGroups"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        
+        if self._SignalGroupsBlocks: return self._SignalGroupsBlocks
+
+        self._SignalGroupsBlocks = SignalGroups.SignalGroupsBlocks()
+        for fileKey, tplp in self._tplp.items(): 
+            if "SignalGroups" in tplp: 
+                for entry in self._tplp[fileKey]["SignalGroups"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    siggrp = SignalGroups.SignalGroups.create_signalGroups(tmp, domainName=entry['name'], file=fileKey, debug = self.debug)
+                    self._SignalGroupsBlocks.add(siggrp)
+        return self._SignalGroupsBlocks
+        
+
 
     def get_signalgroups(self, domain="", ): 
         """
@@ -113,12 +134,23 @@ class STIL(object):
                 return self.__signalGroups
 
         # Create the Signal instances by referring to the tplp. 
+        self._SignalGroupsBlocks = SignalGroups.SignalGroupsBlocks()
+
         for fileKey, tplp in self._tplp.items(): 
             if "SignalGroups" in tplp: 
                 for entry in self._tplp[fileKey]["SignalGroups"]:   
                     tmp = self._string[entry['start']:entry['end'] + 1]
-                    print("DEBUG: (%s): %s"%(func, entry))
-                    self.__signalGroups.append(SignalGroups.SignalGroups.create_signalGroups(tmp, domainName=entry['name'], file=fileKey, debug = self.debug))
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+
+                        
+                    siggrp = SignalGroups.SignalGroups.create_signalGroups(tmp, domainName=entry['name'], file=fileKey, debug = self.debug)
+                    self.__signalGroups.append(siggrp)
+                    # NOTE: I think this is what we are changin here, rather than keeping a list of these objects, 
+                    # we will be storing instances in the <type>Blocks. 
+                    # Example) SignalGroupsBlocks, TimingBlocks, DcLevelsBlock.
+                    self._SignalGroupsBlocks.add(siggrp)
+
+
                     #self.__signalGroups[-1].file = fileKey 
                     # TODO: Should fileKey be passed in at 'create_signals'? 
 
@@ -132,6 +164,11 @@ class STIL(object):
             return self.__signalGroups
 
         return self.__signalGroups 
+
+
+    # TODO: Consider which API makes more sense.
+    def signals(self, ): 
+        return self.get_signals()
 
     def get_signals(self, ): 
         """ 

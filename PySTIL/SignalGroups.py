@@ -3,6 +3,48 @@ import STILutils as sutils
 import SymbolTable as STBL
 import KeyLookUps as KLU
 
+# NOTE: The thing abo
+
+
+
+# This SignalGroupsBlocks is to hold all the valid SignalGroup blocks 
+# found *throughout* the STIL. This really is built to handle the 
+# allownace of STIL Includes. 
+class SignalGroupsBlocks(object): 
+    def __init__(self, *args, **kwargs): 
+        # TODO: Mapping should be FILENAME -> { DOMAINNAME : SIGNALGROUPS } 
+        #if "mapping" in kwargs: self._mapping = kwargs["mapping"]
+        #else: raise ValueError("Must provide mapping value.") 
+        self._domainNameToObjectMap = {}
+        self._domainNameToFileMap = {}
+        self._domainNamesList = [] 
+    
+    def add(self, signalGroups): 
+        if not isinstance(signalGroups, SignalGroups): 
+            raise ValueError("Must provide an instance of 'SignalGroups'.")
+
+        domainName  = signalGroups.get_domain()
+        if domainName in self._domainNamesList: 
+            raise RuntimeError("Recieved a second SignalGroup with domain name %s"%(domainName))
+    
+        self._domainNamesList.append(domainName)
+        self._domainNameToObjectMap[domainName] = signalGroups
+        self._domainNameToFileMap[domainName]   = signalGroups.get_file() 
+
+    def get_domains(self):
+        return self._domainNamesList
+
+    # TODO: Not sure if this name should be different. This is to return 
+    # a SignalBlock object based on the domain name; get_signalGroups 
+    def get_block(self, domain): 
+        if domain in self._domainNameToObjectMap.keys(): 
+            return self._domainNameToObjectMap[domain]
+        raise ValueError("Domain name '%s' is not contained."%(domain)) 
+        
+
+
+
+    
 
 
 class SignalGroups(object): 
@@ -18,9 +60,17 @@ class SignalGroups(object):
 
     def get_domain(self, ):
         return self.domainName 
+    
+    def get_file(self, ): 
+        return self._file
 
-    def get_groups(self, signal): 
+    def get_groups(self, signal=""): 
+        """
+        Parameter `signal` is not a regex. 
+        """
         retlist = []
+        if not signal: return list(self._mapping.keys())
+
         for group in self._mapping: 
             if signal in self._mapping[group]['signals']:
                 retlist.append(group) 
@@ -74,7 +124,7 @@ class SignalGroups(object):
                     entity = tokens[j]['token']
                     if entity in signalGroups: 
                         entity = signalGroups[entity]["signals"]
-                        print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
+                        if debug: print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
                         signalGroupSignals += entity 
                     else: 
                         signalGroupSignals.append(entity)
@@ -85,7 +135,7 @@ class SignalGroups(object):
                     entity = tokens[j+1]['token']
                     if entity in signalGroups: 
                         entity = signalGroups[entity]["signals"]
-                        print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
+                        if debug: print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
                         signalGroupSignals += entity 
                     else: 
                         signalGroupSignals.append(entity)
@@ -96,7 +146,7 @@ class SignalGroups(object):
                     entity = tokens[j+1]['token']
                     if entity in signalGroups: 
                         entity = signalGroups[entity]["signals"]
-                        print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
+                        if debug: print("DEBUG: (%s): Found a group name within content '%s', Expandng to '%s'"%(func, tokens[j]['token'], entity))
                         for substractSignal in entity: 
                             signalGroupSignals.remove(substractSignal)
                     else: 
@@ -111,10 +161,10 @@ class SignalGroups(object):
                 if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                 signalGroups[signalGroupName] = {"signals": signalGroupSignals, 
                                                  "properties" : {}}
-                print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                if debug: print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
 
             elif tokens[_end+1]['tag'] == '{': 
-                print("Continuing")
+                #print("Continuing")
                 # TODO: Grab next set of curly....
                 cs , ce = sytbl.get_next_set(_end, category='curly-brackets')
                 j = cs + 1; jend = ce -1; 
@@ -127,13 +177,13 @@ class SignalGroups(object):
                                     if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                                     if signalGroupName in signalGroups:
                                         signalGroups[signalGroupName]['properties']['Base'] = [tokens[j+1]['token'], tokens[j+2]['token']]
-                                        print("DEBUG: (%s): Added 'Base' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                        if debug: print("DEBUG: (%s): Added 'Base' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                     else: 
                                         signalGroups[signalGroupName] = {"signals": signalGroupSignals, 
                                         "properties" : {
                                             "Base": [tokens[j+1]['token'], tokens[j+2]['token']]
                                         }}
-                                        print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                        if debug: print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                     j += 4; continue
                                 else: raise SyntaxError("Base needs to be terminated with semicolon.")
                             else: raise SyntaxError("Base needs waveform characters.")
@@ -146,13 +196,13 @@ class SignalGroups(object):
                                 if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                                 if signalGroupName in signalGroups:
                                     signalGroups[signalGroupName]['properties']['Alignment'] = tokens[j+1]['token']
-                                    print("DEBUG: (%s): Added 'Alignment' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                    if debug: print("DEBUG: (%s): Added 'Alignment' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                 else: 
                                     signalGroups[signalGroupName] = {"signals": signalGroupSignals, 
                                         "properties" : {
                                             "Alignment": tokens[j+1]
                                         }}
-                                    print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                    if debug: print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                 j += 3; continue
                             else: raise SyntaxError("Alignment must end in semicolon")
                         else: raise SyntaxError("Alignment is only allowed 'MSB' or 'LSB'")
@@ -164,13 +214,13 @@ class SignalGroups(object):
                                 if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                                 if signalGroupName in signalGroups:
                                     signalGroups[signalGroupName]['properties']['ScanOut'] = tokens[j+1]['token']
-                                    print("DEBUG: (%s): Added 'ScanOut' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                    if debug: print("DEBUG: (%s): Added 'ScanOut' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                 else: 
                                     signalGroups[signalGroupName] = {"signals": signalGroupSignals, 
                                         "properties" : {
                                             "ScanOut": tokens[j+1]['token']
                                         }}
-                                    print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                    if debug: print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                                 j += 3; continue
                             else: raise SyntaxError("Alignment must end in semicolon")
                         elif tokens[j+1]['tag'] == ';': 
@@ -178,13 +228,13 @@ class SignalGroups(object):
                             if signalGroupSignals == []: raise RuntimeError("SignalGroup list is empty.")
                             if signalGroupName in signalGroups:
                                 signalGroups[signalGroupName]['properties']['ScanOut'] = True
-                                print("DEBUG: (%s): Added 'ScanOut' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                if debug: print("DEBUG: (%s): Added 'ScanOut' to signal %s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                             else: 
                                 signalGroups[signalGroupName] = {"signals": signalGroupSignals, 
                                         "properties" : {
                                             "ScanOut": True
                                     }}
-                                print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
+                                if debug: print("DEBUG: (%s): Added '%s' to signalGroups: %s"%(func, signalGroupName, signalGroups[signalGroupName]))
                             j += 2; continue
                         else: raise SyntaxError("Expecting ; or digit after ScanOut")
                     j += 1

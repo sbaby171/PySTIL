@@ -632,7 +632,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
     
     if 'SignalGroups' in tplp[fileKey]:
         objectMap['SignalGroups'] = []
-        print("\nSanity Checking SignalGroups blocks...")
+        if debug: print("\nSanity Checking SignalGroups blocks...")
         singleGlobal = False
         RE_SignalGroups_global = re.compile("^SignalGroups\s*\{")
         RE_SignalGroups_DomainName_no_dqoutes   = re.compile("^SignalGroups\s+(?P<name>\w+)\s*\{")

@@ -69,6 +69,15 @@ class SymbolTable(object):
         for sq in self._singleQuotes: 
             retstr.append(" - %s, %s\n"%('\'', sq))
         return "".join(retstr)
+
+    def get_list(self, category): 
+        if category == "semicolon": 
+            return self._semis
+        elif category == "single-quotes":
+            return self._singleQuotes
+
+        
+        else: raise ValueError("Category '%s' is not supported"%(category))
     
     # NOTE: we are passing the tokens around, could make an arg to merge the tokens and
     # the symbol table. 
@@ -76,6 +85,39 @@ class SymbolTable(object):
         positives = []
         dictionary = {}
         for i, index in enumerate(self._curlybrackets, start=0):
+            tmp = index[0] - startIndex
+            if tmp > 0: 
+                #print(tmp)
+                positives.append(tmp)
+                dictionary[tmp] = index
+            else : # tmp <= 0:
+                pass
+        positives.sort()
+        return dictionary[positives[0]]
+    def get_next_singleQuotes_set(self, startIndex):  
+        positives = []
+        dictionary = {}
+        for i, index in enumerate(self._singleQuotes, start=0):
+            tmp = index[0] - startIndex
+            if tmp > 0: 
+                #print(tmp)
+                positives.append(tmp)
+                dictionary[tmp] = index
+            else : # tmp <= 0:
+                pass
+        positives.sort()
+        return dictionary[positives[0]]
+
+    def get_next_set(self, startIndex, category):  
+        func = "%s.get_next_set"%(self.__class__.__name__)
+        positives = []
+        dictionary = {}
+
+        if category == "single-quotes": mapp = self._singleQuotes
+        elif category == "curly-brackets": mapp = self._curlybrackets
+        else: raise ValueError("The category '%s' is not supported."%(func, category))
+
+        for i, index in enumerate(mapp, start=0):
             tmp = index[0] - startIndex
             if tmp > 0: 
                 #print(tmp)
