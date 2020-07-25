@@ -58,11 +58,16 @@ class Other(object):
     keywords = {"A": re.compile("^A$"), 
                 "Alignment": re.compile("^Alignment$"),
                 "Ann": re.compile("^Ann$"),
+                "Apply": re.compile("^Apply$"), # DCLevels, 
                 "B": re.compile("^B$"),
                 "Base": re.compile("^Base$"),
                 "BreakPoint": re.compile("^BreakPoint$"),
                 "Call": re.compile("^Call$"),
                 "Category": re.compile("^Category$"),
+                "Clamp": re.compile("^Clamp$"), # DcLevels
+                "ClampHi": re.compile("^ClampHi$"), # DcLevels
+                "ClampLo": re.compile("^ClampLo$"), # DcLevels
+                "Comparator": re.compile("^Comparator$"), # DcLevels
                 "CompareHigh": re.compile("^CompareHigh$"),
                 "CompareHighWindow": re.compile("^CompareHighWindow$"),
                 "CompareLow": re.compile("^CompareLow$"),
@@ -73,15 +78,20 @@ class Other(object):
                 "CompareZ": re.compile("^CompareZ$"),
                 "CompareZWindow": re.compile("^CompareZWindow$"),
                 "Condition": re.compile("^Condition$"),
+                "Connect": re.compile("^Connect$"), # DcLevels
+                "D": re.compile("^D$"),
                 "DataBitCount": re.compile("^DataBitCount$"), 
                 "Date": re.compile("^Date$"), 
                 "Dec": re.compile("^Dec$"),
                 "DefaultState": re.compile("^DefaultState$"),
+                "EndOfProgram": re.compile("^EndOfProgram$"), # DcLevels
                 "ExceptHigh": re.compile("^ExceptHigh$"),
                 "ExceptLow": re.compile("^ExceptLow$"),
                 "ExceptOff": re.compile("^ExceptOff$"),
                 "F": re.compile("^F$"),
                 "ForceDown": re.compile("^ForceDown$"),
+                "ForceHi": re.compile("^ForceHi$"),# DcLevels
+                "ForceLo": re.compile("^ForceLo$"),# DcLevels
                 "ForceOff": re.compile("^ForceOff$"),
                 "ForcePrior": re.compile("^ForcePrior$"),
                 "ForceUnknown": re.compile("^ForceUnknown$"),
@@ -91,6 +101,14 @@ class Other(object):
                 "H": re.compile("^H$"),
                 "Hex": re.compile("^Hex$"),
                 "History": re.compile("^History$"),
+                "IClamp": re.compile("^IClamp$"), # DcLevels
+                "IForce": re.compile("^IForce$"), # DcLevels
+                "InheritDCLevels": re.compile("^InheritDCLevels$"), # DcLevels
+                "InitHi": re.compile("^InitHi$"), # DcLevels
+                "InitialSetup": re.compile("^InitialSetup$"), # DcLevels
+                "InitLo": re.compile("^InitLo$"), # DcLevels
+                "IOH": re.compile("^IOH$"), # DcLevels
+                "IOL": re.compile("^IOL$"), # DcLevels
                 "IDDQTestPoint": re.compile("^IDDQTestPoint$"), # TODO: Verify
                 "IfNeed": re.compile("^IfNeed$"),
                 "In": re.compile("^In$"), 
@@ -99,6 +117,8 @@ class Other(object):
                 "InheritWaveformTable": re.compile("^InheritWaveformTable$"),
                 "InOut": re.compile("^InOut$"), 
                 "L": re.compile("^L$"), 
+                "Load": re.compile("^Load$"), # DCLevels 
+                "LoadVRef": re.compile("^LoadVRef$"), # DCLevels 
                 "LogicHigh": re.compile("^LogicHigh$"),
                 "LogicLow": re.compile("^LogicLow$"),
                 "LogicZ": re.compile("^LogicZ$"),
@@ -118,10 +138,15 @@ class Other(object):
                 "P": re.compile("^P$"),
                 "PatList": re.compile("^PatList$"),
                 "Period": re.compile("^Period$"),
+                "PMU": re.compile("^PMU$"), # DCLevels
+                "PowerLower": re.compile("^PowerLower$"), # DCLevels
+                "PowerRaise": re.compile("^PowerRaise$"), # DCLevels
                 "Procedures": re.compile("^Procedures$"),
                 "Pseudo": re.compile("^Pseudo$"),
                 "Q": re.compile("^Q$"),
                 "R": re.compile("^R$"),
+                "Ramp": re.compile("^Ramp$"), # DCLevels
+                "ResistiveTermination": re.compile("^ResistiveTermination$"), # DCLevels
                 "ScanCells": re.compile("^ScanCells$"),
                 "ScanChain": re.compile("^ScanChain$"),
                 "ScanIn": re.compile("^ScanIn$"),
@@ -144,12 +169,30 @@ class Other(object):
                 "TerminateOff": re.compile("^TerminateOff$"),
                 "TerminateUnknown": re.compile("^TerminateUnknown$"),
                 "Termination": re.compile("^Termination$"),
+                "TermVRef": re.compile("^TermVRef$"), # DCLevels
                 "TimeUnit": re.compile("^TimeUnit$"),
                 "Title": re.compile("^Title$"), 
                 "Typ": re.compile("^Typ$"),
                 "U": re.compile("^U$"),
+                "User": re.compile("^User$"), # DCLevels
                 "Unknown": re.compile("^Unknown$"),
                 "V": re.compile("^V$"), 
+                "VClamp": re.compile("^VClamp$"), #DCLevels 
+                "VForce": re.compile("^VForce$"), #DCLevels 
+                "VICM": re.compile("^VICM$"), #DCLevels 
+                "VID": re.compile("^VID$"), #DCLevels 
+                "VIH": re.compile("^VIH$"), #DCLevels 
+                "VIHD": re.compile("^VIHD$"), #DCLevels 
+                "VIHSlew": re.compile("^VIHSlew$"), #DCLevels 
+                "VIL": re.compile("^VIL$"), #DCLevels 
+                "VIHL": re.compile("^VIHL$"), #DCLevels 
+                "VILSlew": re.compile("^VILSlew$"), #DCLevels 
+                "VOCM": re.compile("^VOCM$"), #DCLevels 
+                "VOD": re.compile("^VOD$"), #DCLevels 
+                "VOH": re.compile("^VOH$"), #DCLevels 
+                "VOHD": re.compile("^VOHD$"), #DCLevels 
+                "VOL": re.compile("^VOL$"), #DCLevels 
+                "VOLD": re.compile("^VOLD$"), #DCLevels 
                 "Variable": re.compile("^Variable$"),
                 "Vector": re.compile("^Vector$"),
                 "W": re.compile("^W$"), 
