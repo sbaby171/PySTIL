@@ -20,6 +20,7 @@ if __name__ == "__main__":
     userkeyword = "CustomExpansion"
     instances = stil.get_userkeyword("CustomExpansion")
     print(instances)
+    
     for instance in instances: 
         tokens = pystil.sutils.lex(instance)
         #print(tokens)
