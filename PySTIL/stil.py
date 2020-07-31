@@ -5,9 +5,12 @@ import SymbolTable as STBL
 import STILutils as sutils
 import Signals
 import SignalGroups
+import Timing
 
 # TODO: A key a question is to attached the APIs to the STIL object
 #       or a set of APIs? 
+
+GLOBAL = ' '
 
 class STIL(object): 
 
@@ -59,8 +62,10 @@ class STIL(object):
 
 
 
-        self.__signalGroups = [] # NOTE: List of SignalGroups objects.
+        self.__signalGroups = [] # TODO: Remove all remebrants
         self._SignalGroupsBlocks = None
+
+        self._TimingBlocks = None 
     
         self.__userKeywords = [] # NOTE: List of string elements 
 
@@ -194,17 +199,32 @@ class STIL(object):
         # entries are deleted. 
     
 
+    def timing(self,): 
+        func = "%s.timing"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        
+        if self._TimingBlocks: return self._TimingBlocks
+
+        self._TimingBlocks = Timing.TimingBlocks()
+        for fileKey, tplp in self._tplp.items(): 
+            if "Timing" in tplp: 
+                for entry in self._tplp[fileKey]["Timing"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    timing = Timing.create_timing(tmp, domain=entry['name'], file=fileKey, debug = self.debug)
+                    self._TimingBlocks.add(timing)
+
+        return self._TimingBlocks
+
 
 
     def parse(self, ): 
         func = "STIL.parse"
 
-
         if self._tplp is not None: 
-
             if not self._filepath : fileKey = 'string'
             else:                   fileKey = os.path.basename(self._filepath)
-
             # (1) Execute first layer of tpl tagger
             self._tplp = sutils.tpl_tagger( self._tplp, 
                                             fileKey = fileKey, 
@@ -214,7 +234,6 @@ class STIL(object):
                 print("\nDEBUG: (%s): First layer pass 'toplevel-pointer': %s"%(func, fileKey))
                 for key, value in self._tplp[fileKey].items(): 
                     print("DEBUG:   - %s : %s"%(key,value))                
-            
             # (2) Execute sanity check and priliminary object builder. 
             objectMap = sutils.tplp_check_and_object_builder(string  = self._string, 
                                                              tplp    = self._tplp,

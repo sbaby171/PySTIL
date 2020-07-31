@@ -1,0 +1,62 @@
+STIL 1.0 {
+  DCLevels 2002;
+  Design D22;
+}
+
+Signals {
+  CP 	   In;
+  MR 	   In;
+  S0 	   In;
+  S1 	   In;
+  D0 	   In  {ScanIn;}
+  D7 	   In;
+  Q0 	   Out;
+  Q7 	   Out {ScanOut;}
+  IO[0..7] InOut;
+  Vcc 	   Supply;
+  Gnd      Supply;
+}
+
+SignalGroups {
+  AllIn     = 'CP + MR + S0 + S1 + D0 + D7';
+  AllOut    = 'Q0 + Q7';
+  Bus       = 'IO[0..7]';
+  AllSigs   = 'AllIn + AllOut + Bus';
+}
+
+Timing {
+  WaveformTable WavTbl1 {
+    Period 'per';
+    Waveforms {
+        CP      { P  { '0ns' D; 'per/2' U; } }
+        MR      { 01 { '0ns' D/U; 'per/5' U; } }
+        S0      { 01 { '0ns' D/U; } }
+        S1      { 01 { '0ns' D/U; } }
+        D0      { 01 { '0ns' D/U; } }
+        D7      { 01 { '0ns' D/U; } }
+        Q0      { LH { '0ns' X; 'per*4/5' L/H; } }
+        Q7      { LH { '0ns' X; 'per*4/5' L/H; } }
+        IO[0..7] { 
+          01 { 'per/3' D/U; }
+          LH { '0ns' X; 'per*4/5' L/H; } 
+        }
+    }
+  }
+  WaveformTable WavTbl2 {
+    Period '5.0ns';
+    Waveforms {
+        CP      { P  { '0ns' D; 'per/2' U; } }
+        MR      { 01 { '0ns' D/U; 'per/5' U; } }
+        S0      { 01 { '0ns' D/U; } }
+        S1      { 01 { '0ns' D/U; } }
+        D0      { 01 { '0ns' D/U; } }
+        D7      { 01 { '0ns' D/U; } }
+        Q0      { LH { '0ns' X; 'per*4/5' L/H; } }
+        Q7      { LH { '0ns' X; 'per*4/5' L/H; } }
+        IO[0..7] { 
+          01 { 'per/3' D/U; }
+          LH { '0ns' X; 'per*4/5' L/H; } 
+        }
+    }
+  }
+}

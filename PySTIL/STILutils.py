@@ -159,6 +159,8 @@ def lex(string='', file='', debug=False):
             tokens.append({'token':char, 'tag':char})     
         elif char in KLU.References.alphanumeric: 
             token.append(char)        
+        elif char == "/":
+            token.append(char) 
         else: 
             if debug: print("DEBUG: Not sure what to do with char: %s"%(char))
         lastchar = char 
@@ -841,7 +843,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
     #
     if 'Timing' in tplp[fileKey]:
         objectMap['Timing'] = []
-        print("\nSanity Checking Timing blocks...")
+        if debug: print("\nSanity Checking Timing blocks...")
         
         RE_Timing_global = re.compile("^Timing\s*\{")
         RE_Timing_DomainName_no_dqoutes = re.compile("^Timing\s+(?P<name>\w+)\s*\{")
@@ -850,11 +852,9 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         singleGlobal = False
         _foundNames = []
 
-
         for indexes in tplp[fileKey]['Timing']: 
             timingBlockName = ""
             tmp = string[indexes['start']:indexes['end'] + 1]
-
             # Grab timing block name. 
             i = 0; iend = len(domainNames) - 1
             while i <= iend:
@@ -881,10 +881,6 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
             objectMap['Timing'].append({'name': timingBlockName,
                                              'start':indexes['start'], 
                                               'end':indexes['end'],} )  
-
-                 
-
-
         
 
     return objectMap
