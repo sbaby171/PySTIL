@@ -3,10 +3,6 @@ import STILutils as sutils
 import SymbolTable as STBL
 import KeyLookUps as KLU
 
-# NOTE: The thing abo
-
-
-
 # This SignalGroupsBlocks is to hold all the valid SignalGroup blocks 
 # found *throughout* the STIL. This really is built to handle the 
 # allownace of STIL Includes. 
@@ -49,9 +45,12 @@ class SignalGroupsBlocks(object):
 
 class SignalGroups(object): 
     def __init__(self, *args, **kwargs): 
+
+        # TODO: Remove the underscore
         if "file" in kwargs: self._file = kwargs["file"] 
         else: self._file = None
 
+        # TODO: Rename to 'domain'. loss the 'Name'
         if "domainName" in kwargs: self.domainName = kwargs["domainName"]
         else: self.domainName = ""
 
@@ -76,6 +75,8 @@ class SignalGroups(object):
                 retlist.append(group) 
         return retlist
 
+
+    # TODO: This doesn't have to be a static method. It merely be a funciton.
     @staticmethod
     def create_signalGroups(string, domainName = "", file = "", debug=False):
         func = "SignalGroups.create_signalGroups"

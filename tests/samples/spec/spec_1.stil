@@ -1,0 +1,40 @@
+STIL 1.0;
+
+Spec tmode_spec {
+    Category tmode {
+        sp1 = '50.00ns';
+        sp5 = '40.00ns';
+        shmsp5= '50.00ns’;
+        sp10p= '0.00ns';
+        sp10b= '0.00ns';
+        dutyp= '0.00ns';
+        dutyb= '0.00ns';
+    }
+    Category tmode_slow {
+        sp1 {Min '30.00ns'; Typ '50.00ns'; Max '70.00ns';}
+        sp5 {Min '35.00ns'; Typ '40.00ns'; Max '55.00ns';}
+        shmsp5{Min '0.00ns'; Typ '23.00ns'; Max '40.00ns';}
+        sp10p {Min '0.00ns'; Typ '0.00ns'; Max '10.00ns';}
+        sp10b {Min '-10.00ns'; Typ '0.00ns'; Max '0.00ns';}
+        dutyp {Min '-10.00ns'; Typ '0.00ns'; Max '0.00ns';}
+        dutyb {Min '-20.00ns'; Typ '0.00ns'; Max '0.00ns';}
+    }
+}
+Selector tmode_typ {
+    sp1 Typ;
+    sp5 Typ;
+    shmsp5 Typ;
+    sp10p Typ;
+    sp10b Typ;
+    dutyp Typ;
+    dutyb Typ;
+}
+Selector tmode_mix {
+    sp1 Min;
+    sp5 Typ;
+    shmsp5 Max;
+    sp10p Typ;
+    sp10b Typ;
+    dutyp Min;
+    dutyb Max;
+}

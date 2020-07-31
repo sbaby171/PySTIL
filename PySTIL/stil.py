@@ -95,11 +95,6 @@ class STIL(object):
                     retlist.append(tmp)
         self.__userKeywords = retlist 
         return self.__userKeywords
-        
-
-
-                
-
 
     # TODO: Which API is better? I am leaning towards no 'get_'
     def signalGroups(self,): 

@@ -832,6 +832,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                                              'start':indexes['start'], 
                                               'end':indexes['end'],} )  
                 continue 
+            raise RuntimeError("Found not Pattern name.")
 
     # TODO: Other toplevel checks
 
@@ -880,7 +881,59 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
             # For now, I will leave that to the query.  
             objectMap['Timing'].append({'name': timingBlockName,
                                              'start':indexes['start'], 
+                                              'end':indexes['end'],} )
+    # 19. Spec Blocks: 
+    # ----------------
+    # Spec blocks are used to define the value of the variables and expressions
+    # that are used within the waveform definitions. Each Spec block may contain
+    # Catergory blocks (which contain spec variable defintions), or Variable 
+    # defintions directly. 
+    if 'Spec' in tplp[fileKey]:
+        objectMap['Spec'] = []
+        if debug: print("\nSanity Checking Spec blocks...")
+        RE_Spec_DomainName_no_dqoutes = re.compile("^Spec\s+(?P<name>\w+)\s*\{")
+        RE_Spec_DomainName_with_dqoutes = re.compile("^Spec\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['Spec']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            match = RE_Spec_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['Spec'].append({'name': name,  
+                                          'start':indexes['start'], 
+                                          'end':indexes['end'],} )  
+                continue 
+            match = RE_Spec_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['Spec'].append({'name': name,  
+                                             'start':indexes['start'], 
                                               'end':indexes['end'],} )  
+                continue 
+            raise RuntimeError("Found no name for Spec.")
+    if 'Selector' in tplp[fileKey]:
+        objectMap['Selector'] = []
+        if debug: print("\nSanity Checking Selector blocks...")
+        RE_Selector_DomainName_no_dqoutes = re.compile("^Selector\s+(?P<name>\w+)\s*\{")
+        RE_Selector_DomainName_with_dqoutes = re.compile("^Selector\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['Selector']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            match = RE_Selector_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['Selector'].append({'name': name,  
+                                          'start':indexes['start'], 
+                                          'end':indexes['end'],} )  
+                continue 
+            match = RE_Selector_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['Selector'].append({'name': name,  
+                                             'start':indexes['start'], 
+                                              'end':indexes['end'],} )  
+                continue 
+            raise RuntimeError("Found no name for Selector.")
         
 
     return objectMap
