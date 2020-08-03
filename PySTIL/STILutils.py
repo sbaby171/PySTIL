@@ -2,6 +2,12 @@ import sys, os, re
 import KeyLookUps as KLU
 import SymbolTable as STBL 
 
+GLOBAL = " "
+# ^^^ NOTE: This variable is to mainly used internally. It is 
+# to signify the STIL blocks that contained no domain name. The 
+# STIL typically allows this and refers to them as 'Global' 
+# domain names.  
+
 def lex(string='', file='', debug=False): 
     '''
     This function takes in either a string of file path and returns 

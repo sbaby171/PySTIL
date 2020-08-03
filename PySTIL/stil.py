@@ -6,6 +6,7 @@ import STILutils as sutils
 import Signals
 import SignalGroups
 import Timing
+import Spec
 
 # TODO: A key a question is to attached the APIs to the STIL object
 #       or a set of APIs? 
@@ -66,6 +67,7 @@ class STIL(object):
         self._SignalGroupsBlocks = None
 
         self._TimingBlocks = None 
+        self._SpecBlocks = None 
     
         self.__userKeywords = [] # NOTE: List of string elements 
 
@@ -194,13 +196,15 @@ class STIL(object):
         # entries are deleted. 
     
 
+    # TODO: There is a thing to consider here. This is returning a TimingBlocks
+    # object. However, is that clear to the user? Probably not. 
+    # Maybe the API can be renamed to 'timings' plural, as to draw attention to the 
+    # fact that we will be recieving many things.
     def timing(self,): 
         func = "%s.timing"%(self.__class__.__name__)
         if not self.__parsed: 
             raise RuntimeError("Make sure to parse STIL object before making queries.")
-        
         if self._TimingBlocks: return self._TimingBlocks
-
         self._TimingBlocks = Timing.TimingBlocks()
         for fileKey, tplp in self._tplp.items(): 
             if "Timing" in tplp: 
@@ -209,9 +213,28 @@ class STIL(object):
                     if self.debug: print("DEBUG: (%s): %s"%(func, entry))
                     timing = Timing.create_timing(tmp, domain=entry['name'], file=fileKey, debug = self.debug)
                     self._TimingBlocks.add(timing)
-
         return self._TimingBlocks
+    # TODO: See todo comment above relating to the timing. Notice how we are using
+    # plural naming convention. 
+    # 
+    def specs(self,): 
+        func = "%s.specs"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        if self._SpecBlocks: return self._SpecBlocks
+        self._SpecBlocks = Spec.SpecBlocks()
 
+        for fileKey, tplp in self._tplp.items(): 
+            if "Spec" in tplp: 
+                for entry in self._tplp[fileKey]["Spec"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    spec = Spec.create_spec(tmp, name=entry['name'], file=fileKey, debug = self.debug)
+                    self._SpecBlocks.add(spec)
+        return self._SpecBlocks
+
+    # TODO: Remember, you could always create a generic API and 
+    # embed the branched logic wihtin that. Example, "get_blocks('Spec')" 
 
 
     def parse(self, ): 

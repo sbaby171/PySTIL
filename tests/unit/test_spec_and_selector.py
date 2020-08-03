@@ -14,3 +14,20 @@ class TestSpecAndSelector(unittest.TestCase):
 
 
         print(stil._tplp)
+
+
+        print(stil.specs())
+        print(stil.specs().get_names())
+        spec = stil.specs().get_spec(name="tmode_spec")
+        
+        print(spec.get_categories()) 
+        print(spec.get_category(name="tmode")) 
+
+        print(spec.get_category(name="tmode_slow")) 
+
+        print(spec.categories)
+
+        # NOTE: The question is how will user typically reference the 
+        # category blocks.
+
+        

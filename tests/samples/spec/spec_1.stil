@@ -4,7 +4,7 @@ Spec tmode_spec {
     Category tmode {
         sp1 = '50.00ns';
         sp5 = '40.00ns';
-        shmsp5= '50.00ns’;
+        shmsp5 = '50.00ns';
         sp10p= '0.00ns';
         sp10b= '0.00ns';
         dutyp= '0.00ns';

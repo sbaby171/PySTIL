@@ -45,6 +45,10 @@ class SymbolTable(object):
                 else: singleQuotes.append(i)
             else: pass 
         # Done with parsing tokens 
+    
+    def __contains__(self, tag): 
+        if tag in self._map: return True
+        else: return False 
 
     def __getitem__(self, keyword): 
         if keyword in self._map: 
