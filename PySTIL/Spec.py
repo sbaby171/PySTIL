@@ -26,22 +26,22 @@ import KeyLookUps as KL
 # 
 # 
 class SpecBlocks(object): 
-
     def __init__(self): 
         self.specs = {} # Name -> SpecObject
-
     def add(self, spec): 
         if not isinstance(spec, Spec): 
             raise ValueError("Must provide instance of Spec.")
         if spec.name in self.specs: 
             raise ValueError("Spec %s is already defined"%(spec.name)) 
         self.specs[spec.name] = spec
-    
-    def get_spec(self, name): 
+    def spec(self, name): 
         if name in self.specs: return self.specs[name]
         else: return None
-    def get_names(self,): 
-        return list(self.specs.keys())
+    def __len__(self): 
+        return len(self.specs)
+
+
+
     
 
 
@@ -69,7 +69,7 @@ class Spec(object):
         else: 
             raise ValueError("Entity is of to be classes 'Category' or 'Variable'.")
 
-    def get_names(self,): 
+    def get_names(self,): # TODO: Trash  
         retdict = {}
         for cat in self.categories: 
             retdict[cat] = 'Category'
@@ -78,10 +78,12 @@ class Spec(object):
         return retdict
     def get_categories(self,): 
         return self.categories
-    def get_category(self, name): 
+
+    def category(self, name): 
         if name not in self.categories: 
             raise ValueError("The Category (%s) is not present."%(name))
         return self.categories[name]
+    # TODO: def variable(self, name): 
 
 
 class Category(object): 
@@ -115,6 +117,10 @@ class Category(object):
         if var in self.vars: 
             raise RuntimeError("Var (%s) is already defined."%(var))
         self.vars[var] = tmpDict
+
+
+    def __len__(self,): 
+        return len(self.vars)
 
     def __str__(self,): 
         retstr = ["Category: %s"%(self.name)]
@@ -162,15 +168,12 @@ def create_spec(string, name = "", file = "", debug=False):
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
     spec   = Spec(name=name)
-    if True: 
+    if debug: 
         print("DEBUG: (%s): Tokens: %s "% (func, tokens))
         print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
 
     if 'Category' in sytbl: 
-        print("Symbol table contains 'Category'.")
-        # TODO: Overload Category creation to other method. 
         for index in sytbl["Category"]: 
-            print(index)
             cbs, cbe = sytbl.get_next_curly_set(index)
             if cbs - index != 2: 
                 raise RuntimeError("Expecting 'Spec <name> {'")
@@ -191,7 +194,7 @@ def create_spec(string, name = "", file = "", debug=False):
                         settings[tokens[i+2]['tag']]  = sytbl.string_token_range(tokens, i+3, semi-1)
 
                         if semi == _cbe - 1: 
-                            print("DONE")
+                            raise RuntimeError("Havent implemented yet.")
 
                         if ((tokens[semi+1]['tag'] == "Min") or 
                             (tokens[semi+1]['tag'] == "Typ") or 
@@ -201,7 +204,8 @@ def create_spec(string, name = "", file = "", debug=False):
                             settings[tokens[oldSemi+1]['tag']]  = sytbl.string_token_range(tokens, oldSemi+2, semi-1)
 
                             if semi == _cbe - 1: 
-                                print("DONE")
+                                raise RuntimeError("Havent implemented yet.")
+
 
                             if ((tokens[semi+1]['tag'] == "Min") or 
                                 (tokens[semi+1]['tag'] == "Typ") or 
@@ -211,8 +215,6 @@ def create_spec(string, name = "", file = "", debug=False):
                                 settings[tokens[oldSemi+1]['tag']]  = sytbl.string_token_range(tokens, oldSemi+2, semi-1)
 
                                 if semi == _cbe - 1: 
-                                    print("DONE")
-                                    print(settings)
                                     minValue = None; typValue = None; maxValue = None
                                     if 'Min' in settings: minValue = settings["Min"]
                                     if 'Typ' in settings: typValue = settings["Typ"]
@@ -236,7 +238,6 @@ def create_spec(string, name = "", file = "", debug=False):
             spec.add(category)
 
     if 'Variable' in sytbl: 
-        print("Symbol table contains 'Variable'.")
         raise RuntimeError("The implementation for Spec 'Variable' is no done.")
         # TODO: Overload Variable creation to other method. 
     # TODO: Perhaps the Variable and Category builders can 

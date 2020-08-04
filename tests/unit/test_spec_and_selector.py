@@ -13,21 +13,40 @@ class TestSpecAndSelector(unittest.TestCase):
         failed = False; msg = []
 
 
-        print(stil._tplp)
-
-
-        print(stil.specs())
-        print(stil.specs().get_names())
-        spec = stil.specs().get_spec(name="tmode_spec")
+        #print(stil._tplp)
+        #print(stil.specs())
         
-        print(spec.get_categories()) 
-        print(spec.get_category(name="tmode")) 
-
-        print(spec.get_category(name="tmode_slow")) 
-
-        print(spec.categories)
-
         # NOTE: The question is how will user typically reference the 
         # category blocks.
+        if len(stil.specs()) != 1:
+            failed = True
+            msg.append("Expecting one block. Recieved %d"%(len(stil.specs())))
+
+        spec = stil.specs().spec(name="tmode_spec")
+        categories = spec.get_categories()
+
+        if len(categories) != 2:
+            failed = True
+            msg.append("Expecting 2 categories. Recieved %d"%(len(categories)))
+
+        tmodeCat = spec.category("tmode")
+        if (len(tmodeCat) != 7): 
+            failed = True
+            msg.append("Expecting 7 categories. Recieved %d"%(len(tmodeCat)))
+
+        if tmodeCat.vars["dutyb"] != {'value': "'0.00ns'"}: 
+            failed = True
+            msg.append("Dictionary for tmode's 'dutyb' is not proper.")
+
+        tmodeSlow = spec.category("tmode_slow")
+        if (len(tmodeSlow) != 7): 
+            failed = True
+            msg.append("Expecting 7 categories. Recieved %d"%(len(tmodeCat)))
+
+        if tmodeSlow.vars["shmsp5"] != {'Min':"'0.00ns'",'Typ':"'23.00ns'",'Max':"'40.00ns'"}:
+            failed = True
+            msg.append("Dictionary for tmode_slow's 'shmsp5' is not proper.")
+
+        self.assertTrue(failed == False, "\n".join(msg))
 
         
