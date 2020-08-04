@@ -149,21 +149,12 @@ class Variable(object):
 # Refer to my notes on this answer.
 
 
-class Selector(object): 
-
-    def __init__(self, name): 
-        self.name = name 
-        self.vars = {} # varName -> Min|Typ|Max|Meas
-    
-    def add(self, var, value): 
-        if var in self.vars: 
-            raise RuntimeError("Variable %s is already set."%(var))
-        if value != ["Min",'Typ','Max','Meas']: 
-            raise RuntimeError("Bad value %s. Only Min, Typ, Max, and Meas are allowed."%(value))
-        self.vars[var] = value 
-
 
 def create_spec(string, name = "", file = "", debug=False):
+    """ 
+    String is a raw string. Typically this will be coming from the 
+    STIL object. 
+    """
     func   = "create_spec"
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
@@ -177,7 +168,6 @@ def create_spec(string, name = "", file = "", debug=False):
             cbs, cbe = sytbl.get_next_curly_set(index)
             if cbs - index != 2: 
                 raise RuntimeError("Expecting 'Spec <name> {'")
-
             category = Category()
             category.name = tokens[index + 1]['token']
             i = cbs + 1; end = cbe - 1
@@ -243,6 +233,83 @@ def create_spec(string, name = "", file = "", debug=False):
     # TODO: Perhaps the Variable and Category builders can 
     # be of the same method? 
     return spec
+
+class SelectorBlocks(object): 
+    def __init__(self): 
+        self.selectors = {} # Name -> SpecObject
+    def add(self, selector): 
+        if not isinstance(selector, Selector): 
+            raise ValueError("Must provide instance of Selector.")
+        if selector.name in self.selectors: 
+            raise ValueError("Spec %s is already defined"%(selector.name)) 
+        self.selectors[selector.name] = selector
+    def selector(self, name): 
+        if name in self.selectors: return self.selectors[name]
+        else: return None
+    def __len__(self): 
+        return len(self.selectors)
+
+class Selector(object): 
+
+    def __init__(self, name): 
+        self.name = name 
+        self.vars = {} # varName -> Min|Typ|Max|Meas
+    
+    def add(self, var, value): 
+        if var in self.vars: 
+            raise RuntimeError("Variable %s is already set."%(var))
+        if value not in ["Min",'Typ','Max','Meas']: 
+            raise RuntimeError("Bad value %s. Only Min, Typ, Max, and Meas are allowed."%(value))
+        self.vars[var] = value 
+    
+    def __len__(self): 
+        return len(self.vars)
+
+    
+
+
+
+def create_selector(string, name = "", file = "", debug=False):
+    """ 
+    String is a raw string. Typically this will be coming from the 
+    STIL object. 
+    """
+    func   = "create_selector"
+    tokens = sutils.lex(string=string, debug=debug)
+    sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
+    spec   = Spec(name=name)
+    if debug: 
+        print("DEBUG: (%s): Tokens: %s "% (func, tokens))
+        print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
+
+    if 'Selector' not in sytbl: 
+        raise ValueError("No Selectors in symbol table.") # TODO: It is not clear that this should be an error. 
+    else: 
+        selector = Selector(name=name)
+        if len(sytbl["Selector"]) >= 2: 
+            raise RuntimeError("Not expecting more than one Selector item")
+        index = sytbl["Selector"][0]
+        cbs, cbe = sytbl.get_next_curly_set(index)
+        if cbs - index != 2: 
+            raise RuntimeError("Expecting 'Selector <name> {'")
+        if name != tokens[index+1]['token']: 
+            raise RuntimeError("Selector names do not match. %s != %s"%(name, tokens[index+1]['token']))
+        i = cbs + 1; end = cbe - 1
+        while i <= end: 
+            if tokens[i]['tag'] != 'identifier': 
+                raise RuntimeError("Expecting identifier.")
+            varName = tokens[i]['token']
+            if tokens[i+1]['tag'] not in ['Min', 'Typ', 'Max','Meas']: #TODO: Reference a global look up
+                raise RuntimeError("Expecting either 'Min', 'Typ', 'Max', or 'Meas'")
+            value = tokens[i+1]['token']
+            if tokens[i+2]['tag'] != ';': 
+                raise RuntimeError("Expecting semicolon to end statement.")
+            selector.add(varName,value)
+            i+=3; continue 
+    return selector
+         
+                    
+   
 
 
 

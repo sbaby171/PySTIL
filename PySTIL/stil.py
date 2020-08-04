@@ -68,6 +68,7 @@ class STIL(object):
 
         self._TimingBlocks = None 
         self._SpecBlocks = None 
+        self._SelectorBlocks = None 
     
         self.__userKeywords = [] # NOTE: List of string elements 
 
@@ -235,6 +236,23 @@ class STIL(object):
 
     # TODO: Remember, you could always create a generic API and 
     # embed the branched logic wihtin that. Example, "get_blocks('Spec')" 
+
+
+    def selectors(self,): 
+        func = "%s.selectors"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        if self._SelectorBlocks: return self._SelectorBlocks
+        self._SelectorBlocks = Spec.SelectorBlocks()
+
+        for fileKey, tplp in self._tplp.items(): 
+            if "Selector" in tplp: 
+                for entry in self._tplp[fileKey]["Selector"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    spec = Spec.create_selector(tmp, name=entry['name'], file=fileKey, debug = self.debug)
+                    self._SelectorBlocks.add(spec)
+        return self._SelectorBlocks
 
 
     def parse(self, ): 

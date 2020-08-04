@@ -47,6 +47,18 @@ class TestSpecAndSelector(unittest.TestCase):
             failed = True
             msg.append("Dictionary for tmode_slow's 'shmsp5' is not proper.")
 
+        if len(stil.selectors()) != 2: 
+            failed = True
+            msg.append("Expecting 2 Selector. Recieved %s"%(len(stil.selectors())))
+
+        if stil.selectors().selector("tmode_typ").vars["sp5"] != 'Typ':
+            failed = True
+            msg.append("Expecting 'tmode_typ' 'sp5' to be 'Typ'.")
+
+        if stil.selectors().selector("tmode_mix").vars["shmsp5"] != 'Max':
+            failed = True
+            msg.append("Expecting 'tmode_mix' 'shmsp5' to be 'Max'.")
+
         self.assertTrue(failed == False, "\n".join(msg))
 
         
