@@ -52,6 +52,7 @@ class TopLevel(object):
                 "DCLevels": re.compile("^DCLevels$"),
                 "DCSets": re.compile("^DCSets$"),
                 "DCSequence": re.compile("^DCSequence$"),
+                "Environment": re.compile("^Environment$")
                 }
     
 class Other(object): 
@@ -137,6 +138,11 @@ class Other(object):
                 "Out": re.compile("^Out$"), 
                 "P": re.compile("^P$"),
                 "PatList": re.compile("^PatList$"),
+                "PatSet":re.compile("^PatSet$"), # 1450.1
+                "ParallelPatList": re.compile("^ParallelPatList$"), # 1450.1
+                "SyncStart": re.compile("^SyncStart$"), # 1450.1
+                "Independent": re.compile("^Independent$"), # 1450.1
+                "LockStep": re.compile("^LockStep$"), # 1450.1
                 "Period": re.compile("^Period$"),
                 "PMU": re.compile("^PMU$"), # DCLevels
                 "PowerLower": re.compile("^PowerLower$"), # DCLevels
