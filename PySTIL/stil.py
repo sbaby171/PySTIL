@@ -82,6 +82,14 @@ class STIL(object):
     # quotes as well, to make user version of STIL language look similiar 
     # to the core STIL."
 
+    def print_tplp(self,): 
+        for filekey in self._tplp: 
+            print("FILE: %s:"%(filekey))
+            for block in self._tplp[filekey]: 
+                print(" - %s: "%(block))
+                for entry in self._tplp[filekey][block]: 
+                    print("    * %s"%(entry)) 
+
     def get_userkeyword(self, key): 
         if not self.__parsed: 
             raise RuntimeError("Make sure to parse STIL object before making queries.")

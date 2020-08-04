@@ -441,6 +441,9 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
                     else: tplp[fileKey][_token] = [{'start':i-len(_token),'end':-1}]                                   
                     lastchar = char; continue  
 
+        elif char == "/": 
+            lastchar = char; continue
+
         else: # IF char NOT a space OR '{' (remmber, all other cases should be handled by the state machine). 
             token.append(char)
         #elif char in References.alphanumeric: 
@@ -781,8 +784,8 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         print("\nSanity Checking PatternBurst blocks...")
         singleGlobal = False
         
-        RE_PatternBurst_DomainName_no_dqoutes = re.compile("^PatternExec\s+(?P<name>\w+)\s*\{")
-        RE_PatternBurst_DomainName_with_dqoutes = re.compile("^PatternExec\s+(?P<name>\".*\")\s*\{")
+        RE_PatternBurst_DomainName_no_dqoutes = re.compile("^PatternBurst\s+(?P<name>\w+)\s*\{")
+        RE_PatternBurst_DomainName_with_dqoutes = re.compile("^PatternBurst\s+(?P<name>\".*\")\s*\{")
         
         RE_SignalGroups = re.compile("SignalGroups(?P<name>.*);")
         RE_MacroDefs = re.compile("MacroDefs(?P<name>.*);")
@@ -796,15 +799,26 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
             tmp = string[indexes['start']:indexes['end'] + 1]
             tokens = lex(string=tmp, debug=debug)
             symtbl = STBL.SymbolTable(tokens, debug = debug)
-            print(symtbl)
-            pbd = patternburst_map_maker(tokens, symtbl, debug)
-            print(pbd)
-            print("TODO: Convert this object to the objectmap here ")
-            
-            objectMap['PatternBurst'].append({ 'start':indexes['start'], 
+            #print(symtbl)
+            #pbd = patternburst_map_maker(tokens, symtbl, debug)
+            #print(pbd)
+            # 
+            match = RE_PatternBurst_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['PatternBurst'].append({'name': name,  
+                                             'start':indexes['start'], 
                                               'end':indexes['end'],} )  
-            objectMap['PatternBurst'][-1].update(pbd)
-    
+                continue 
+            match = RE_PatternBurst_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                name = match.group("name")
+                objectMap['PatternBurst'].append({'name': name,  
+                                             'start':indexes['start'], 
+                                              'end':indexes['end'],} )  
+                continue
+            #objectMap['PatternBurst'][-1].update(pbd)
+            # ^^^ TODO: Removing 
     
         if debug: print("DEBUG: (%s): Done..."%(func))
 
