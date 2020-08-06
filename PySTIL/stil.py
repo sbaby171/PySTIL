@@ -93,6 +93,21 @@ class STIL(object):
     # quotes as well, to make user version of STIL language look similiar 
     # to the core STIL."
 
+    def Timings(self,): 
+        func = "%s.timing"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        if self._TimingBlocks: return self._TimingBlocks
+        self._TimingBlocks = Timing.TimingBlocks()
+        for fileKey, tplp in self._tplp.items(): 
+            if "Timing" in tplp: 
+                for entry in self._tplp[fileKey]["Timing"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    timing = Timing.create_timing(tmp, domain=entry['name'], file=fileKey, debug = self.debug)
+                    self._TimingBlocks.add(timing)
+        return self._TimingBlocks
+
     def PatternBursts(self,): 
         func = "%s.specs"%(self.__class__.__name__)
         if not self.__parsed: 

@@ -28,6 +28,22 @@ if __name__ == "__main__":
     #print(stil._tplp)
     stil.print_tplp() 
 
+    # Timing: 
+    # ---------------------: 
+    timings = stil.Timings()
+    print("Timing Domains: %s"%(timings.get_domains()))
+    print("Timing Wavetables:")
+    #for wvtbl in timings.get_waveformtables(): 
+    #    print("  - %s"%(wvtbl.name))
+    for wvtbl in timings.WaveformTables(): 
+        print("  - %s"%(wvtbl.name))
+
+
+    # PatternBurst: 
+    # ------------: 
+    stil.PatternBursts() 
+    
+
 
     # Query parts
 

@@ -37,6 +37,16 @@ class TimingBlocks(object):
         for timing in self._domainToObjectMap: 
             retlist.extend(self._domainToObjectMap[timing].get_waveformtables(regex=regex))
         return retlist
+
+    def WaveformTables(self,regex=""): 
+        """
+        Return a list of WaveformTable objects found. 
+        """
+        retlist = []
+        for timing in self._domainToObjectMap: 
+            retlist.extend(self._domainToObjectMap[timing].get_waveformtables(regex=regex))
+        return retlist
+
     
         
 
@@ -224,14 +234,10 @@ def create_timing(string, domain = "", file = "", debug=False):
     #if debug: 
     #    print("DEBUG: (%s): Tokens: %s "% (func, tokens))
     #    print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
-
-
     wvfmtbls = sytbl["WaveformTable"]
     #print(wvfmtbls)
     #cbSet = sytbl.get_next_set(wvfmtbls[0], "curly-brackets")
     #print(cbSet)
-
-
     for wvtblIndex in wvfmtbls: 
         cbStart, cbEnd = sytbl.get_next_set(wvtblIndex, "curly-brackets")
         # Extract WaveformTable name: 
@@ -255,7 +261,7 @@ def create_timing(string, domain = "", file = "", debug=False):
                 "for a given WaveformTable. See WaveformTable '%s' definition."\
                 %(waveformTableName))
         closingPeriodIndex = sytbl.get_next_instance(periodIndex[0],';')
-        print("Closing Period index: ", closingPeriodIndex)
+        #print("Closing Period index: ", closingPeriodIndex)
 
         for k, token in enumerate(tokens): 
             print(k , token) 
@@ -285,12 +291,7 @@ def create_timing(string, domain = "", file = "", debug=False):
 
         waveformtable.set_waveforms(Waveforms.create_waveforms(tokens = tokens, 
         symbolTable= sytbl, waveformsIndex = waveformsIndex[0])) 
-
-
         timing.add_waveformtable(waveformtable)
-
-
-
     return timing  
 
 
