@@ -143,6 +143,7 @@ class Other(object):
                 "SyncStart": re.compile("^SyncStart$"), # 1450.1
                 "Independent": re.compile("^Independent$"), # 1450.1
                 "LockStep": re.compile("^LockStep$"), # 1450.1
+                "Extend": re.compile("^Extend$"), # 1450.1
                 "Period": re.compile("^Period$"),
                 "PMU": re.compile("^PMU$"), # DCLevels
                 "PowerLower": re.compile("^PowerLower$"), # DCLevels

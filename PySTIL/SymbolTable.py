@@ -53,7 +53,11 @@ class SymbolTable(object):
     def __getitem__(self, keyword): 
         if keyword in self._map: 
             return self._map[keyword]
-        else: return None
+        else: return []
+    # ^^^ NOTE: We return an empty list so that users can 
+    # do the following: 
+    #   for i in symboltable["BLOCK"]: 
+    #       proces on each instance.
         
     def add_keyword(self, tag, i):
         if tag in self._map: 

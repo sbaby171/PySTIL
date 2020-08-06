@@ -7,6 +7,7 @@ import Signals
 import SignalGroups
 import Timing
 import Spec
+import PatternBurst 
 
 # TODO: A key a question is to attached the APIs to the STIL object
 #       or a set of APIs? 
@@ -64,15 +65,25 @@ class STIL(object):
 
 
         self.__signalGroups = [] # TODO: Remove all remebrants
-        self._SignalGroupsBlocks = None
 
+        self._SignalGroupsBlocks = None
         self._TimingBlocks = None 
         self._SpecBlocks = None 
         self._SelectorBlocks = None 
+
+        self._PatternBurstBlocks = None
     
         self.__userKeywords = [] # NOTE: List of string elements 
 
 
+    def print_tplp(self,): 
+        for filekey in self._tplp: 
+            print("FILE: %s:"%(filekey))
+            for block in self._tplp[filekey]: 
+                print(" - %s: "%(block))
+                for entry in self._tplp[filekey][block]: 
+                    print("    * %s"%(entry)) 
+        return
 
     # NOTE: "The standard doesn't explicitly allow/disallow quoted user 
     # keywords. However, we do NOT ALLOW that since user keywords are 
@@ -82,13 +93,24 @@ class STIL(object):
     # quotes as well, to make user version of STIL language look similiar 
     # to the core STIL."
 
-    def print_tplp(self,): 
-        for filekey in self._tplp: 
-            print("FILE: %s:"%(filekey))
-            for block in self._tplp[filekey]: 
-                print(" - %s: "%(block))
-                for entry in self._tplp[filekey][block]: 
-                    print("    * %s"%(entry)) 
+    def PatternBursts(self,): 
+        func = "%s.specs"%(self.__class__.__name__)
+        if not self.__parsed: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        if self._PatternBurstBlocks: return self._PatternBurstBlocks
+        self._PatternBurstBlocks = PatternBurst.PatternBurstBlocks()
+
+        for fileKey, tplp in self._tplp.items(): 
+            if "PatternBurst" in tplp: 
+                for entry in self._tplp[fileKey]["PatternBurst"]:   
+                    tmp = self._string[entry['start']:entry['end'] + 1]
+                    if self.debug: print("DEBUG: (%s): %s"%(func, entry))
+                    pb = PatternBurst.create_PatternBurst(tmp, name=entry['name'], file=fileKey, debug = self.debug)
+                    self._PatternBurstBlocks.add(pb)
+        return self._PatternBurstBlocks
+
+ 
+        
 
     def get_userkeyword(self, key): 
         if not self.__parsed: 
