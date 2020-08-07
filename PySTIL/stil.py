@@ -104,7 +104,7 @@ class STIL(object):
                 for entry in self._tplp[fileKey]["Timing"]:   
                     tmp = self._string[entry['start']:entry['end'] + 1]
                     if self.debug: print("DEBUG: (%s): %s"%(func, entry))
-                    timing = Timing.create_timing(tmp, domain=entry['name'], file=fileKey, debug = self.debug)
+                    timing = Timing.create_timing(tmp, name=entry['name'], file=fileKey, debug = self.debug)
                     self._TimingBlocks.add(timing)
         return self._TimingBlocks
 

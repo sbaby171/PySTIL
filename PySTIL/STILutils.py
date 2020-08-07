@@ -8,6 +8,28 @@ GLOBAL = " "
 # STIL typically allows this and refers to them as 'Global' 
 # domain names.  
 
+class Blocks(object): 
+    def __init__(self): 
+        self.objects = {} # Name -> Object
+        
+    def add(self, entity, classtype): 
+        if not isinstance(entity, classtype): 
+            raise ValueError("Must provide instance of %s."%(classtype))
+        self.objects[entity.name] = entity
+        
+    def get(self, name): 
+        if name in self.objects: return self.objects[name]
+        else: return None
+    
+    def names(self, ): 
+        """Return list of all object names."""
+        return list(self.objects.keys())
+        
+    def __len__(self): 
+        return len(self.objects)   
+
+
+
 def lex(string='', file='', debug=False): 
     '''
     This function takes in either a string of file path and returns 

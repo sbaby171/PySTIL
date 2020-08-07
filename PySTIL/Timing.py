@@ -5,63 +5,33 @@ import KeyLookUps as KL
 
 
 
-class TimingBlocks(object): 
-    def __init__(self, *args, **kwargs): 
-        # TODO: Mapping should be FILENAME -> { DOMAINNAME : TIMING } 
-        self._domainToObjectMap = {}
-        self._domainToFileMap = {}
-        self._domainList = [] 
-    
+class TimingBlocks(sutils.Blocks): 
+    def __init__(self): 
+        super().__init__()
     def add(self, timing): 
-        if not isinstance(timing, Timing): 
-            raise ValueError("Must provide an instance of 'Timing'.")
-        domain = timing.get_domain()
-        if domain in self._domainList: 
-            raise RuntimeError("Recieved a second instance with domain name %s"%(domain))
-        self._domainList.append(domain)
-        self._domainToObjectMap[domain] = timing
-        self._domainToFileMap[domain]   = timing.get_file() 
-
-    def get_domains(self):
-        return self._domainList
-
-    # TODO: Not sure if this name should be different. This is to return 
-    # a SignalBlock object based on the domain name; get_signalGroups 
-    def get_timing(self, domain): 
-        if domain in self._domainToObjectMap.keys(): 
-            return self._domainToObjectMap[domain]
-        raise ValueError("Domain name '%s' is not contained."%(domain)) 
-
-    def get_waveformtables(self, regex = ""): 
-        retlist = []
-        for timing in self._domainToObjectMap: 
-            retlist.extend(self._domainToObjectMap[timing].get_waveformtables(regex=regex))
-        return retlist
+        super().add(timing, Timing)
 
     def WaveformTables(self,regex=""): 
         """
         Return a list of WaveformTable objects found. 
         """
         retlist = []
-        for timing in self._domainToObjectMap: 
-            retlist.extend(self._domainToObjectMap[timing].get_waveformtables(regex=regex))
+        for timing in self.objects.values(): 
+            retlist.extend(timing.WaveformTables(regex=regex))
         return retlist
-
     
-        
-
-        
-
-
+# TODO: File needed? Probably for error handling and bookkeeping. 
 class Timing(object): 
-    def __init__(self, *args, **kwargs): 
-        if "file" in kwargs: self.file = kwargs["file"] 
-        else: self.file = None
-        if "domain" in kwargs: self.domain = kwargs["domain"]
-        else: self.domain = ""
-
-        if "mapping" in kwargs: self._mapping = kwargs["mapping"]
-        else: raise ValueError("Must provide mapping value.")
+    def __init__(self, name, mapping, file = ""): 
+        self.file = file 
+        self.name = name
+        self.mapping = mapping 
+        #if "file" in kwargs: self.file = kwargs["file"] 
+        #else: self.file = None
+        #if "domain" in kwargs: self.domain = kwargs["domain"]
+        #else: self.domain = ""
+        #if "mapping" in kwargs: self._mapping = kwargs["mapping"]
+        #else: raise ValueError("Must provide mapping value.")
         # TODO: Require a mapping is a bit specific. This is done becasue, to 
         # date, we are creating the Timing objects 'behind the scenes', meaning
         # the users do not see this. I suppose we can keep this for now.  
@@ -71,13 +41,11 @@ class Timing(object):
         # 
         self.waveformTables = {} # Instances of WaveformTable
         self.signalGroups   = ""
-    def get_domain(self,): return self.domain
+    def get_name(self,): return self.name
     def get_file(self,):   return self.file
 
-
-    def get_waveformtables(self, regex=""): 
+    def WaveformTables(self, regex=""): 
         if not regex: 
-            #return list(self.waveformTables.keys())
             return self.waveformTables.values()
         retList = []
         for wvtbl in self.waveformTables:
@@ -88,6 +56,20 @@ class Timing(object):
             if keep: 
                 retList.append(self.waveformTables[wvtbl])
         return retList
+
+    #def get_waveformtables(self, regex=""): 
+    #    if not regex: 
+    #        #return list(self.waveformTables.keys())
+    #        return self.waveformTables.values()
+    #    retList = []
+    #    for wvtbl in self.waveformTables:
+    #        keep = True
+    #        if regex: 
+    #            if not re.search(regex, wvtbl): 
+    #                keep = False 
+    #        if keep: 
+    #            retList.append(self.waveformTables[wvtbl])
+    #    return retList
 
 
     def add_waveformtable(self, wvtbl): 
@@ -226,11 +208,11 @@ class Waveforms(object):
 #               |----> waveforms (singles)
 #                      |----> WFC or WFC_LIST
 #
-def create_timing(string, domain = "", file = "", debug=False):
+def create_timing(string, name = "", file = "", debug=False):
     func = "Timing.create_timing"
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
-    timing = Timing(domain=domain, mapping={})
+    timing = Timing(name=name, mapping={})
     #if debug: 
     #    print("DEBUG: (%s): Tokens: %s "% (func, tokens))
     #    print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))

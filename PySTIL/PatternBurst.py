@@ -5,35 +5,17 @@ import KeyLookUps as KL
 
 
 
-
-
-class PatternBurstBlocks(object): 
+class PatternBurstBlocks(sutils.Blocks): 
     def __init__(self): 
-        self.patternBursts = {} # Name -> PatternBurstObject
+        super().__init__()
     def add(self, patternBurst): 
-        if not isinstance(patternBurst, PatternBurst): 
-            raise ValueError("Must provide instance of PatternBurst.")
-        self.patternBursts[patternBurst.name] = patternBurst
-    def get(self, name): 
-        if name in self.patternBursts: return self.patternBursts[name]
-        else: return None
-    def __len__(self): 
-        return len(self.patternBursts)
+        super().add(patternBurst, PatternBurst)
 
 class PatternBurst(object):
-    def __init__(self, name=""):
-        # TODO: Error if empty?  
+    def __init__(self, name):
         self.name = name 
-
-        #self.patLists = []
-        #self.patSets  = []
-        #self.parallelPatLists = []
-
         self.blocks = {"PatList": [], "ParallelPatList":[], "PatSet":[]}
         self.ordering = [] # [(type,index)]
-
-        # TODO: Internal blocks of the PatternBurst need to be 
-        # kept in order. 
     
     def add(self, entity): 
         if isinstance(entity, PatList): 
