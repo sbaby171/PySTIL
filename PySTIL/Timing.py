@@ -245,8 +245,8 @@ def create_timing(string, name = "", file = "", debug=False):
         closingPeriodIndex = sytbl.get_next_instance(periodIndex[0],';')
         #print("Closing Period index: ", closingPeriodIndex)
 
-        for k, token in enumerate(tokens): 
-            print(k , token) 
+        #for k, token in enumerate(tokens): 
+        #    print(k , token) 
 
         period = sytbl.string_token_range(tokens, periodIndex[0]+1, closingPeriodIndex-1)
 

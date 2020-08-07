@@ -14,8 +14,9 @@ class TestTiming(unittest.TestCase):
 
 
         # stil.timing().get_waveformTables() 
-        print(stil.timing())
-        print(stil.timing().get_timing(pystil.GLOBAL))
+        #print(stil.Timings())
+        #print(stil.timing().get_timing(pystil.GLOBAL))
+        #print(stil.Timings().get(pystil.GLOBAL))
 
         expectations = { "WavTbl1": {'period':"'per'",
                                      'numOfSignals': 9, 
@@ -24,7 +25,7 @@ class TestTiming(unittest.TestCase):
                                      'numOfSignals': 9, 
                                     },
                         }
-        waveformtables = stil.timing().get_waveformtables()
+        waveformtables = stil.Timings().WaveformTables()
 
         i = 0; end = len(waveformtables ) - 1
         while i <= end: 
