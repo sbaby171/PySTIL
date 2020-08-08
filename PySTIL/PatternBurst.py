@@ -10,6 +10,8 @@ class PatternBurstBlocks(sutils.Blocks):
         super().__init__()
     def add(self, patternBurst): 
         super().add(patternBurst, PatternBurst)
+    
+     
 
 class PatternBurst(object):
     def __init__(self, name):
@@ -30,6 +32,14 @@ class PatternBurst(object):
         else: 
             raise RuntimeError("Must provide instance of either "\
                 "PatList, ParallelPatList, or PatSet.")
+    
+    def patterns(self, ):
+        """Return list of all patterns referenced in PatternBurst block."""
+        retlist = []
+        for subblock in self.blocks: 
+            for instance in self.blocks[subblock]:
+                retlist.extend(instance.patterns.keys())
+        return retlist
 
 def create_PatternBurst(string, name = "", file = "", debug=False):
     """ 
@@ -54,6 +64,12 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
     [todos.append((key,value)) for (key, value) in sorted(tmap.items())]
     for todo in todos: 
         i = todo[0]; block = todo[1]
+
+        if block == "PatList": 
+            raise RuntimeError("PatList processing is not implemented yet.")
+        if block == "PatSet": 
+            raise RuntimeError("PatSet processing is not implemented yet.")
+
         if block == "ParallelPatList": 
             cbs, cbe = sytbl.get_next_curly_set(i)
             ppl = ParallelPatList()
@@ -63,7 +79,6 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
                     raise RuntimeError("ParallelPatList must be of modes"\
                     "%s. Recieved the following: %s"%(ParallelPatList.modes, tokens[i+1]['token']))
                 else: ppl.mode = tokens[i+1]['tag']
-            print(ppl.mode)
 
             j = cbs + 1; jend = cbe - 1 
             # State flags: 
@@ -101,7 +116,7 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
                         j += 2; continue 
                     else: raise RuntimeError("Expecting Pattern name.")
                 j += 1
-            print(ppl.patterns)
+            #print(ppl.patterns)
             pb.add(ppl)    
     return pb
 
