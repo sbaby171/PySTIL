@@ -6,6 +6,9 @@ import timeit
 def _handle_cmd_args(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", help="Increase console logging", action="store_true")
+    parser.add_argument("--timings", help="Dump Timing findings", action="store_true")
+    parser.add_argument("--patternbursts", help="Dump PatternBurst findings", action="store_true")
+    parser.add_argument("--specs", help="Dump Speec findings", action="store_true")
     parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
     parser.add_argument("stil", help="STIL file path",)
     args = parser.parse_args()
@@ -30,18 +33,35 @@ if __name__ == "__main__":
 
     # Timing: 
     # ---------------------: 
-    timings = stil.Timings()
-    print("Timing Domains: %s"%(timings.get_domains()))
-    print("Timing Wavetables:")
-    #for wvtbl in timings.get_waveformtables(): 
-    #    print("  - %s"%(wvtbl.name))
-    for wvtbl in timings.WaveformTables(): 
-        print("  - %s"%(wvtbl.name))
+    if args.timings: 
+        print("Timings: ")
+        print("=======:")
+        timings = stil.Timings()
+        print("Timing Domains: %s"%(timings.names()))
+        print("Timing Wavetables:")
+        for wvtbl in timings.WaveformTables(): 
+            print("  - %s"%(wvtbl.name))
+        print("")
 
+    # Spec: 
+    # ------------: 
+    if args.specs: 
+        print("Specs: ")
+        print("=============:")
+        print("Domains: %s"%(stil.Specs().names()))
+        print("Categories: %s"%(stil.Specs().Categories()))
 
     # PatternBurst: 
     # ------------: 
-    stil.PatternBursts() 
+    if args.patternbursts: 
+        print("PatternBursts: ")
+        print("=============:")
+        print("Domains: %s"%(stil.PatternBursts().names()))
+        pb = stil.PatternBursts().get("\"b_ga106_a01_iobist_pll_fb_htol_p2G_1p35_hssa_dp_cont_dqdata_prbs_IN_D15_d_4\"")
+        print("Patterns Referenced:")
+        for pat in pb.patterns(): 
+            print(" - %s"%(pat))
+        print("")
     
 
 

@@ -25,20 +25,35 @@ import KeyLookUps as KL
 # `stil.add_block()`
 # 
 # 
-class SpecBlocks(object): 
+class SpecBlocks(sutils.Blocks): 
     def __init__(self): 
-        self.specs = {} # Name -> SpecObject
+        super().__init__()
     def add(self, spec): 
-        if not isinstance(spec, Spec): 
-            raise ValueError("Must provide instance of Spec.")
-        if spec.name in self.specs: 
-            raise ValueError("Spec %s is already defined"%(spec.name)) 
-        self.specs[spec.name] = spec
-    def spec(self, name): 
-        if name in self.specs: return self.specs[name]
-        else: return None
-    def __len__(self): 
-        return len(self.specs)
+        super().add(spec, Spec)
+
+    # TODO: Refactor the implementation that was done for timing.Wavetables()
+    # This is becoming a similiar query structure. 
+
+    # TODO: There is another issue with my implementation. 
+    # If i say, `stil.Timings()` (or any other toplevel class)
+    # I am always returning a custom object. So when I start doing
+    # the following, `stil.Timings().WaveformTables()` where that 
+    # returns a list of names, well that is a bit incongruent. 
+    # If I was never user, I would expect I was getting another special
+    # class. Or at minimum a list od dictionary of the objects. 
+    def Categories(self):  
+        # NOTE: That below i am just grabbing everything, all the 
+        # categoires. Consider this as the most basic implementation
+        # adn leave it to users to implement thier own regex searches
+        # at the user level. Or create a separate layer API 
+
+        retlist = []
+        for spec in self.objects.values(): 
+            retlist.extend(list(spec.categories.keys()))
+        return retlist
+
+
+
 
 
 
