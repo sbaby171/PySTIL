@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 import STILutils as sutils
 import SymbolTable as STBL
 import KeyLookUps as KL
@@ -18,6 +19,14 @@ class PatternBurst(object):
         self.name = name 
         self.blocks = {"PatList": [], "ParallelPatList":[], "PatSet":[]}
         self.ordering = [] # [(type,index)]
+
+        self.SignalGroups = None 
+        self.MacroDefs = None 
+        self.Procedures = None 
+        self.ScanStructures = None 
+        self.Start = None 
+        self.Stop = None 
+        self.Termination = None 
     
     def add(self, entity): 
         if isinstance(entity, PatList): 
@@ -54,83 +63,110 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
         print("DEBUG: (%s): Tokens: %s "% (func, tokens))
         print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
     
+    # Parse over the outside layers first: 
+    pbi = sytbl["PatternBurst"][0]
+    if tokens[pbi + 1]['tag'] != 'identifier': 
+        raise RuntimeError("Expecting identifier after 'PatternBurst'")
+    if tokens[pbi + 2]['tag'] != '{': 
+        raise RuntimeError("Expecting '{' to start 'PatternBurst' defintiion.")
+
+    # Process everything outside of ParallelPatList, PatList, and PatSet
+    cbs, cbe = sytbl.get_next_curly_set(pbi)
+    i = cbs + 1; iend = cbe - 1
+    while i <= iend: 
+        # Jump over all internal blocks: 
+        if tokens[i]['tag'] in ["PatList","PatSet","ParallelPatList"]: 
+            _cbs, _cbe = sytbl.get_next_curly_set(i)
+            i = _cbe; continue 
+        # Handle PatternBurst Settings: 
+        if tokens[i]['tag'] == "SignalGroups": 
+            if tokens[i+1]['tag'] != 'identifier': 
+                raise RuntimeError("Expecting identifier after SignalGroups.")
+            if tokens[i+2]['tag'] != ';': 
+                raise RuntimeError("Expecting SignalGroups to be terinated by ';'.")
+            pb.SignalGroups = tokens[i+1]['token']
+            i += 3; continue 
+        # TODO: Do others .....
+        i += 1; continue 
+
     # TODO: Keep order of the PatList, ParallelPatList, PatSet
     tmap = {} 
     for i in sytbl["PatList"]: tmap[i] = "PatList"
     for i in sytbl["ParallelPatList"]: tmap[i] = "ParallelPatList"
     for i in sytbl["PatSet"]: tmap[i] = "PatSet"
-
     todos = []
     [todos.append((key,value)) for (key, value) in sorted(tmap.items())]
     for todo in todos: 
         i = todo[0]; block = todo[1]
+        if   block == "PatList": spb = PatList()
+        elif block == "PatSet": spb = PatSet()
+        elif block == "ParallelPatList": spb = ParallelPatList() 
+        else: RuntimeError("Expecting PatList, PatSet, or ParallelPatList.")
+        # Establish flags used for parsing
+        inPattern = False
+        inPatternStart = None; inPatternEnd = None
+        patname = ""
+        # get block start and ends, 
+        cbs , cbe = sytbl.get_next_curly_set(i)
+        j = cbs + 1; jend = cbe - 1
+        while j <= jend: 
+            if inPattern: 
+                if j == inPatternEnd: 
+                    inPattern = False 
+                    inPatternStart = None 
+                    inPatternEnd = None
+                    patname = ""
+                    j += 1; continue 
+                if tokens[j]['tag'] == 'Extend': 
+                    spb.add_field(patname, 'Extend', True)
+                    if tokens[j+1]['tag'] != ';': 
+                        raise RuntimeError("Expecting curly bracket after Extend")
+                    j+=2; continue
+                # TODO: SignalGroups, Procedures, etc.
+                j += 1; continue 
+            if tokens[j]['tag'] in ['SyncStart','Independent','LockStep']: 
+                spb.mode = tokens[j]['token'] 
+                j += 1; continue 
+            if tokens[j]['tag'] == 'identifier': 
+                patname = tokens[j]['token'] 
+                spb.add_pattern(patname)
+                if debug: print("DEBUG: (%s): Added Pattern: %s"%(func, patname))
+                if tokens[j+1]['tag'] == ';': 
+                    j += 2; continue 
+                elif tokens[j+1]['tag'] == "{": 
+                    inPattern = True
+                    inPatternStart, inPatternEnd = sytbl.get_next_curly_set(j)
+                    j = inPatternStart + 1; continue 
+            j += 1 
+        pb.add(spb)
 
-        if block == "PatList": 
-            raise RuntimeError("PatList processing is not implemented yet.")
-        if block == "PatSet": 
-            raise RuntimeError("PatSet processing is not implemented yet.")
-
-        if block == "ParallelPatList": 
-            cbs, cbe = sytbl.get_next_curly_set(i)
-            ppl = ParallelPatList()
-            # Handle ParallelPatList Mode.
-            if cbs - i == 2: 
-                if tokens[i+1]['tag'] not in ParallelPatList.modes: 
-                    raise RuntimeError("ParallelPatList must be of modes"\
-                    "%s. Recieved the following: %s"%(ParallelPatList.modes, tokens[i+1]['token']))
-                else: ppl.mode = tokens[i+1]['tag']
-
-            j = cbs + 1; jend = cbe - 1 
-            # State flags: 
-            inPattern = False
-            inSignalGroups = False 
-            inMacroDefs = False 
-            inProcedures = False 
-            inScanStructures = False 
-            inStart = False; inStop = False
-            inTermination = False 
-
-            pat = ""; cbcount = 0 
-            while j <= jend: 
-                token = tokens[j]['token']
-                tag   = tokens[j]['tag'] 
-                # State dependent: 
-                if inPattern: 
-                    if tag == "}": cbcount -= 1
-                    if cbcount == 0: inPattern = 0; j+=1; continue 
-                    if tag == "Extend": 
-                        ppl[pat]["Extend"] = True
-                        if tokens[j+1]['tag'] != ';': 
-                            raise RuntimeError("Expecting ';' after Extend statment.")
-                        # TODO: if tag == "SignalGroups", etc.
-                    j+=1; continue 
-
-                # Freelance: 
-                if tag == 'identifier': 
-                    pat = token; ppl.add(token)
-                    if tokens[j+1]['tag'] == ";": 
-                        j += 2; continue 
-                    elif tokens[j+1]['tag'] == "{":
-                        cbcount = 1 
-                        inPattern = True
-                        j += 2; continue 
-                    else: raise RuntimeError("Expecting Pattern name.")
-                j += 1
-            #print(ppl.patterns)
-            pb.add(ppl)    
     return pb
 
 
 
 class PatList(object): 
-    def __init__(self, ): 
-        self.patterns = {} # name -> {}
-        # SignalGroups, MacrosDefs, etc. 
 
-    def add(self, patname): 
+    def __init__(self, ): 
+        self.patterns = OrderedDict () # name -> {}
+
+        self.fieldOptions = ["SignalGroups", 
+        "MacroDefs","Procedures","ScanStructures",
+        "Start", "Stop","Termination", "Variables", 
+        "If", "While", # TODO: Should these be 'here'
+        ]
+        
+
+    def add_pattern(self, patname): 
         if patname in self.patterns: 
             raise RuntimeError("Pattern is already named:  %s"%(patname))
         self.patterns[patname] = {}
+    
+    def add_field(self, patname, key, value):
+        if key not in self.fieldOptions: 
+            raise ValueError("Option '%s' is not supported."%(key))
+        self.patterns[patname][key] = value 
+
+
     
     def __getitem__(self, pattern): 
         if pattern in self.patterns: return self.patterns[pattern] 
@@ -142,6 +178,12 @@ class ParallelPatList(PatList):
     def __init__(self,): 
         super().__init__()
         self.mode = 'Independent'
+        self.fieldOptions = ["SignalGroups", 
+        "MacroDefs","Procedures","ScanStructures",
+        "Start", "Stop","Termination", "Variables", 
+        "If", "While", # TODO: Should these be 'here'
+        "Extend",
+        ]
 
     def extend(self, pattern): 
         if pattern not in self.patterns: 
@@ -151,3 +193,8 @@ class ParallelPatList(PatList):
 class PatSet(PatList): 
     def __init__(self,): 
         super().__init__()
+        self.fieldOptions = ["SignalGroups", 
+        "MacroDefs","Procedures","ScanStructures",
+        "Start", "Stop","Termination", "Variables", 
+        ]
+        
