@@ -6,9 +6,9 @@ import timeit
 def _handle_cmd_args(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", help="Increase console logging", action="store_true")
-    parser.add_argument("--timings", help="Dump Timing findings", action="store_true")
-    parser.add_argument("--patternbursts", help="Dump PatternBurst findings", action="store_true")
-    parser.add_argument("--specs", help="Dump Speec findings", action="store_true")
+    parser.add_argument("--Timings", help="Dump Timing findings", action="store_true")
+    parser.add_argument("--PatternBursts", help="Dump PatternBurst findings", action="store_true")
+    parser.add_argument("--Specs", help="Dump Speec findings", action="store_true")
     parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
     parser.add_argument("stil", help="STIL file path",)
     args = parser.parse_args()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     # Timing: 
     # ---------------------: 
-    if args.timings: 
+    if args.Timings: 
         print("Timings: ")
         print("=======:")
         timings = stil.Timings()
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # Spec: 
     # ------------: 
-    if args.specs: 
+    if args.Specs: 
         print("Specs: ")
         print("=============:")
         print("Domains: %s"%(stil.Specs().names()))
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # PatternBurst: 
     # ------------: 
-    if args.patternbursts: 
+    if args.PatternBursts: 
         print("PatternBursts: ")
         print("=============:")
         print("Domains: %s"%(stil.PatternBursts().names()))
