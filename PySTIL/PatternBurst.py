@@ -29,15 +29,16 @@ class PatternBurst(object):
         self.Termination = None 
     
     def add(self, entity): 
-        if isinstance(entity, PatList): 
-            self.blocks["PatList"].append(entity)
-            self.ordering.append(("PatList",len(self.blocks["PatList"])-1))
-        elif isinstance(entity, ParallelPatList): 
-            self.blocks["ParallelPatlist"].append(entity)
+
+        if isinstance(entity, ParallelPatList): 
+            self.blocks["ParallelPatList"].append(entity)
             self.ordering.append(("ParallelPatList",len(self.blocks["ParallelPatList"])-1))
         elif isinstance(entity, PatSet): 
             self.blocks["PatSet"].append(entity)
             self.ordering.append(("PatSet",len(self.blocks["PatSet"])-1))
+        elif isinstance(entity, PatList): 
+            self.blocks["PatList"].append(entity)
+            self.ordering.append(("PatList",len(self.blocks["PatList"])-1))
         else: 
             raise RuntimeError("Must provide instance of either "\
                 "PatList, ParallelPatList, or PatSet.")
@@ -49,6 +50,19 @@ class PatternBurst(object):
             for instance in self.blocks[subblock]:
                 retlist.extend(instance.patterns.keys())
         return retlist
+    
+    def get_PatLists(self,): 
+        """Returns a list of PatList objects. Note, STIL does not allow 
+        for naming of PatList blocks. Thus, we must always return a list."""
+        return self.blocks["PatList"]
+    def get_PatSets(self,): 
+        """Returns a list of PatSet objects. Note, STIL does not allow 
+        for naming of PatSet blocks. Thus, we must always return a list."""
+        return self.blocks["PatSet"]
+    def get_ParallelPatLists(self,): 
+        """Returns a list of ParallelPatList objects. Note, STIL does not allow 
+        for naming of ParallelPatList blocks. Thus, we must always return a list."""
+        return self.blocks["ParallelPatList"]
 
 def create_PatternBurst(string, name = "", file = "", debug=False):
     """ 
@@ -117,11 +131,20 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
                     inPatternEnd = None
                     patname = ""
                     j += 1; continue 
+                # Adding fields: 
                 if tokens[j]['tag'] == 'Extend': 
                     spb.add_field(patname, 'Extend', True)
                     if tokens[j+1]['tag'] != ';': 
-                        raise RuntimeError("Expecting curly bracket after Extend")
+                        raise RuntimeError("Expecting semicolon after Extend")
                     j+=2; continue
+                if tokens[j]['tag'] == 'Start': 
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'Start', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after Start.")
+                    else: raise RuntimeError("Expecting identifier after Start.")
+                    j+=3; continue
+                # TODO: SignalGroups, Procedures, e
                 # TODO: SignalGroups, Procedures, etc.
                 j += 1; continue 
             if tokens[j]['tag'] in ['SyncStart','Independent','LockStep']: 
@@ -139,6 +162,7 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
                     j = inPatternStart + 1; continue 
             j += 1 
         pb.add(spb)
+        spb = None 
 
     return pb
 
@@ -165,12 +189,12 @@ class PatList(object):
         if key not in self.fieldOptions: 
             raise ValueError("Option '%s' is not supported."%(key))
         self.patterns[patname][key] = value 
-
-
     
     def __getitem__(self, pattern): 
         if pattern in self.patterns: return self.patterns[pattern] 
         else: return None 
+    
+        
 
 class ParallelPatList(PatList): 
     modes = ["SyncStart", "Independent", "LockStep"]

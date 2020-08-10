@@ -1,0 +1,28 @@
+STIL 1.0; 
+
+
+
+PatternBurst "myPatternBurst" {
+
+    ParallelPatList SyncStart {
+        "Pattern1" ;
+        "Pattern2" {
+            Extend;
+        }
+        "Pattern3" {
+            Extend;
+        }
+        "Pattern4" {
+            Extend;
+        }
+    }
+
+    PatSet {
+        "Pattern5";
+    }
+
+    PatList{
+        write_vecs {Start xbegin;}
+        read_vecs  {Start xend;}
+    }
+}
