@@ -18,11 +18,11 @@ class TestSpecAndSelector(unittest.TestCase):
         
         # NOTE: The question is how will user typically reference the 
         # category blocks.
-        if len(stil.specs()) != 1:
+        if len(stil.Specs()) != 1:
             failed = True
-            msg.append("Expecting one block. Recieved %d"%(len(stil.specs())))
+            msg.append("Expecting one block. Recieved %d"%(len(stil.Specs())))
 
-        spec = stil.specs().spec(name="tmode_spec")
+        spec = stil.Specs().get(name="tmode_spec")
         categories = spec.get_categories()
 
         if len(categories) != 2:
