@@ -137,15 +137,49 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
                     if tokens[j+1]['tag'] != ';': 
                         raise RuntimeError("Expecting semicolon after Extend")
                     j+=2; continue
-                if tokens[j]['tag'] == 'Start': 
+                if tokens[j]['tag'] == 'Start':  
                     if tokens[j+1]['tag'] == 'identifier': 
                         spb.add_field(patname, 'Start', tokens[j+1]['token'])
                         if tokens[j+2]['tag'] != ';': 
                             raise RuntimeError("Expecting semicolon after Start.")
                     else: raise RuntimeError("Expecting identifier after Start.")
                     j+=3; continue
-                # TODO: SignalGroups, Procedures, e
-                # TODO: SignalGroups, Procedures, etc.
+                if tokens[j]['tag'] == 'Stop':  
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'Stop', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after Stop.")
+                    else: raise RuntimeError("Expecting identifier after Stop.")
+                    j+=3; continue
+                if tokens[j]['tag'] == 'SignalGroups': # TODO: I think you can multiple instances, acording to 17.1 1405.0 
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'SignalGroups', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after SignalGroups.")
+                    else: raise RuntimeError("Expecting identifier after SignalGroups.")
+                    j+=3; continue
+                if tokens[j]['tag'] == 'MacroDefs': # TODO: I think you can multiple instances, acording to 17.1 1405.0 
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'MacroDefs', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after MacroDefs.")
+                    else: raise RuntimeError("Expecting identifier after MacroDefs.")
+                    j+=3; continue
+                if tokens[j]['tag'] == 'Procedures': # TODO: I think you can multiple instances, acording to 17.1 1405.0 
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'Procedures', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after Procedures.")
+                    else: raise RuntimeError("Expecting identifier after Procedures.")
+                    j+=3; continue
+                if tokens[j]['tag'] == 'ScanStructures': # TODO: I think you can multiple instances, acording to 17.1 1405.0 
+                    if tokens[j+1]['tag'] == 'identifier': 
+                        spb.add_field(patname, 'ScanStructures', tokens[j+1]['token'])
+                        if tokens[j+2]['tag'] != ';': 
+                            raise RuntimeError("Expecting semicolon after ScanStructures.")
+                    else: raise RuntimeError("Expecting identifier after ScanStructures.")
+                    j+=3; continue
+                # TODO: Termination....
                 j += 1; continue 
             if tokens[j]['tag'] in ['SyncStart','Independent','LockStep']: 
                 spb.mode = tokens[j]['token'] 
