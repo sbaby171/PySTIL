@@ -108,10 +108,11 @@ if __name__ == "__main__":
     if args.Specs: 
         print("\nSpecs: ")
         print("=============:")
+        specs = stil.Specs()
         print("Spec Name Blocks (domains):")
-        domains = stil.Specs().names()
+        domains = specs.names()
         for domain in domains: 
-            print("  - %s"%(domain))
+            print("  - %s,  file: %s"%(domain, specs.get(domain).get_file()))
         print("Categories: %s"%(stil.Specs().Categories()))
 
 

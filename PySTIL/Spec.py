@@ -68,6 +68,7 @@ class SpecBlocks(sutils.Blocks):
 class Spec(object):
     def __init__(self, name = sutils.GLOBAL, file=""): 
         self.name = name 
+        self.file = file
         self.categories = {} # TODO: Name->Object
         self.variables  = {} 
         # ^^^ TODO: Get valid sample. Also, it maybe that a spec 
@@ -83,6 +84,9 @@ class Spec(object):
             else: self.variables[entity.name] = entity
         else: 
             raise ValueError("Entity is of to be classes 'Category' or 'Variable'.")
+    
+    def get_name(self,): return self.name 
+    def get_file(self,): return self.file 
 
     def get_names(self,): # TODO: Trash  
         retdict = {}
