@@ -8,9 +8,9 @@ import KeyLookUps as KL
 
 class PatternBurstBlocks(sutils.Blocks): 
     def __init__(self): 
-        super().__init__()
+        super(PatternBurstBlocks, self).__init__()
     def add(self, patternBurst): 
-        super().add(patternBurst, PatternBurst)
+        super(PatternBurstBlocks, self).add(patternBurst, PatternBurst)
     
      
 
@@ -248,7 +248,7 @@ class ParallelPatList(PatList):
     modes = ["SyncStart", "Independent", "LockStep"]
 
     def __init__(self,): 
-        super().__init__()
+        super(ParallelPatList, self).__init__()
         self.mode = 'Independent'
         self.fieldOptions = ["SignalGroups", 
         "MacroDefs","Procedures","ScanStructures",
@@ -264,7 +264,7 @@ class ParallelPatList(PatList):
 
 class PatSet(PatList): 
     def __init__(self,): 
-        super().__init__()
+        super(PatSet, self).__init__()
         self.fieldOptions = ["SignalGroups", 
         "MacroDefs","Procedures","ScanStructures",
         "Start", "Stop","Termination", "Variables", 

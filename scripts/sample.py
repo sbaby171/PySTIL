@@ -56,14 +56,11 @@ if __name__ == "__main__":
     if args.SignalGroups: 
         print("\nSignalGroups: ")
         print("=============:")
+        signalGroupsBlocks = stil.SignalGroups()
         print("SignalGroups Name Blocks (domains):")
-        domains = stil.SignalGroups().names()
+        domains = signalGroupsBlocks.names()
         for domain in domains: 
-            print("  - %s"%(domain))
-        #pb = stil.PatternBursts().get(domains[0])
-        #print("Patterns Referenced in %s:"%(domains[0]))
-        #for pat in pb.patterns(): 
-        #    print(" - %s"%(pat))
+            print("  - %s,  file: %s"%(domain, signalGroupsBlocks.get(domain).get_file()))
         print("")
 
     # PatternBurst: 

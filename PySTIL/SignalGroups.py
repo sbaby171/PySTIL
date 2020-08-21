@@ -5,15 +5,15 @@ import KeyLookUps as KLU
 
 class SignalGroupsBlocks(sutils.Blocks): 
     def __init__(self): 
-        super().__init__()
+        super(SignalGroupsBlocks, self).__init__()
     def add(self, signalGroups): 
-        super().add(signalGroups, SignalGroups)
+        super(SignalGroupsBlocks, self).add(signalGroups, SignalGroups)
 
 
 class SignalGroups(object): 
     def __init__(self, name, mapping, file=""): 
 
-        self._file = file
+        self.file = file
         self.name = name
         self._mapping = mapping
 
@@ -22,7 +22,7 @@ class SignalGroups(object):
         return self.name 
     
     def get_file(self, ): 
-        return self._file
+        return self.file
 
     def get_groups(self, signal=""): 
         """

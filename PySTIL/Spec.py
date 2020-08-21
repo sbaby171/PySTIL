@@ -27,9 +27,9 @@ import KeyLookUps as KL
 # 
 class SpecBlocks(sutils.Blocks): 
     def __init__(self): 
-        super().__init__()
+        super(SpecBlocks, self).__init__()
     def add(self, spec): 
-        super().add(spec, Spec)
+        super(SpecBlocks, self).add(spec, Spec)
 
     # TODO: Refactor the implementation that was done for timing.Wavetables()
     # This is becoming a similiar query structure. 

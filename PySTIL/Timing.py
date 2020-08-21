@@ -7,9 +7,9 @@ import KeyLookUps as KL
 
 class TimingBlocks(sutils.Blocks): 
     def __init__(self): 
-        super().__init__()
+        super(TimingBlocks, self).__init__()
     def add(self, timing): 
-        super().add(timing, Timing)
+        super(TimingBlocks, self).add(timing, Timing)
 
     def WaveformTables(self,regex=""): 
         """
