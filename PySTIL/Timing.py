@@ -13,7 +13,7 @@ class TimingBlocks(sutils.Blocks):
 
     def WaveformTables(self,regex=""): 
         """
-        Return a list of WaveformTable objects found. 
+        Return a list of WaveformTable objects found throughout STIL. 
         """
         retlist = []
         for timing in self.objects.values(): 
@@ -212,7 +212,7 @@ def create_timing(string, name = "", file = "", debug=False):
     func = "Timing.create_timing"
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
-    timing = Timing(name=name, mapping={})
+    timing = Timing(name=name,file=file, mapping={})
     #if debug: 
     #    print("DEBUG: (%s): Tokens: %s "% (func, tokens))
     #    print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))

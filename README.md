@@ -2,6 +2,15 @@
 A module to read and write STIL files.
 
 
+## Design notes: 
+
+* If multiple variables are defined within a single Spec/Category block, the 
+first definition is kept and all other are ignored. 
+
+
+
+
+
 
 
 ## Testing: 

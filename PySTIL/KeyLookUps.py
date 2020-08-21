@@ -32,27 +32,29 @@ class References(object):
     
 
 class TopLevel(object):
-    keywords = {"STIL":re.compile("^STIL$"), 
-                "Include": re.compile("^Include$"),
-                "Header": re.compile("^Header$"), 
-                "Signals": re.compile("^Signals$"), 
-                "SignalGroups": re.compile("^SignalGroups$"), 
-                "ScanStructures": re.compile("^ScanStructures$"), 
-                "Spec": re.compile("^Spec$"),
-                "Timing": re.compile("^Timing$"), 
-                "Selector": re.compile("^Selector$"),
-                "PatternBurst": re.compile("^PatternBurst$"), 
-                "PatternExec": re.compile("^PatternExec$"), 
-                "Procedures": re.compile("^Procedures$"), 
-                "MacroDefs": re.compile("^MacroDefs$"),
-                "Pattern": re.compile("^Pattern$"),
-                "UserKeywords": re.compile("^UserKeywords$"),
-                "UserFunctions": re.compile("^UserFunctions$"),
+    keywords = {
                 "Ann": re.compile("^Ann$"), # TODO: This is in both TopLevel and Others. Becareful.
                 "DCLevels": re.compile("^DCLevels$"),
                 "DCSets": re.compile("^DCSets$"),
                 "DCSequence": re.compile("^DCSequence$"),
-                "Environment": re.compile("^Environment$")
+                "Environment": re.compile("^Environment$"),
+                "Header": re.compile("^Header$"), 
+                "Include": re.compile("^Include$"),
+                "MacroDefs": re.compile("^MacroDefs$"),
+                "PatternBurst": re.compile("^PatternBurst$"), 
+                "PatternExec": re.compile("^PatternExec$"), 
+                "Procedures": re.compile("^Procedures$"), 
+                "Pattern": re.compile("^Pattern$"),
+                "ScanStructures": re.compile("^ScanStructures$"), 
+                "Selector": re.compile("^Selector$"),
+                "Signals": re.compile("^Signals$"), 
+                "SignalGroups": re.compile("^SignalGroups$"), 
+                "Spec": re.compile("^Spec$"),
+                "STIL":re.compile("^STIL$"),
+                "Timing": re.compile("^Timing$"), 
+                "UserKeywords": re.compile("^UserKeywords$"),
+                "UserFunctions": re.compile("^UserFunctions$"),
+                "Variables": re.compile("^Variables$")
                 }
     
 class Other(object): 

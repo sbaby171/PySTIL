@@ -135,6 +135,16 @@ class SymbolTable(object):
                     pass 
             positives.sort()
             return dictionary[positives[0]]
+        
+
+        # This will start at index and move along tokens 
+        # until the next instance of tag is found and return 
+        # that new index value.
+        i = startIndex; iend = len(self._tokens) - 1 
+        while i <= iend: 
+            if self._tokens[i]['tag'] == tag: 
+                return i
+            else: i+=1
 
 
 

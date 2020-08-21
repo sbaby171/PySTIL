@@ -1,4 +1,5 @@
-import sys, os, re 
+import sys, os, re, gzip
+from collections import OrderedDict
 import KeyLookUps as KLU
 import SymbolTable as STBL 
 
@@ -243,7 +244,7 @@ def lex(string='', file='', debug=False):
     return finalTokens 
 
 
-def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
+def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False, gunzip = False):
     func = "STILutils.__tpl_tagger" 
 
     states = { "free" : True, 
@@ -258,12 +259,34 @@ def tpl_tagger(tplp, fileKey='', string = '', file = '', debug = False):
     # Check intpu First check the current layout of tplp
     if not fileKey: raise ValueError("need to provide filekey")
     if fileKey in tplp: raise RuntimeError("Contain double instances of: ", fileKey)
-    else:  tplp[fileKey] = {}
+    else:  tplp[fileKey] = OrderedDict()
         
-    # Load STIL-string: 
+    print("FileKey: ", fileKey)
+    print("File: ", file)
+
+
+
     if string: test = string
-    else: f = open(file,'r'); test = f.read(); f.close()
-    
+    """ 
+    # Load STIL-string: 
+    if fileKey.endswith(".gz"): 
+        gunzip = True 
+        print("DEBUG: (1) Setting gunzip flag true. Found '.gz' at suffix.")
+    if not gunzip: 
+        print("NOT gunzipped")
+        if string: test = string
+        else: f = open(file,'r'); test = f.read(); f.close()
+    elif gunzip: 
+        print("CCCCC")
+        f=gzip.open(fileKey, 'rt')
+        test = f.read()
+        f.close()
+        print(type(test))
+        #test = test.decode('utf-8') 
+    else: 
+        raise RuntimeError("Expecting to be reg or gzip file.")
+    """
+    #sys.exit(1) 
 
     # Hooks for handling reporting.
     lineCount = 1; charOnLineIndex = 1
@@ -574,9 +597,12 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
     # 8.0 STIL Statement: 
     # -------------------
     # 'The STIL statement shalle be the first statement of the STIL file.'
-    if next(iter(tplp[fileKey])) != 'STIL': 
+    #if next(iter(tplp[fileKey])) != 'STIL': 
+    #    raise RuntimeError("First block must be 'STIL'.")
+    if 'STIL' not in tplp[fileKey]: 
+        raise RuntimeError("Each STIL must contain STIL statement or block.")
+    if list(tplp[fileKey].keys())[0] != 'STIL': 
         raise RuntimeError("First block must be 'STIL'.")
-
     # 9.0 Header Block
     # ----------------
     # 'Contains general information about the STIL file being parsed.'
@@ -673,8 +699,6 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
         
         for indexes in tplp[fileKey]['SignalGroups']: 
             tmp = string[indexes['start']:indexes['end'] + 1]
-            #print(tmp)
-            
             # Match for global: 
             match = RE_SignalGroups_global.search(tmp)
             if match: 
@@ -821,10 +845,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
             tmp = string[indexes['start']:indexes['end'] + 1]
             tokens = lex(string=tmp, debug=debug)
             symtbl = STBL.SymbolTable(tokens, debug = debug)
-            #print(symtbl)
-            #pbd = patternburst_map_maker(tokens, symtbl, debug)
-            #print(pbd)
-            # 
+
             match = RE_PatternBurst_DomainName_no_dqoutes.search(tmp)
             if match: 
                 name = match.group("name")
@@ -839,8 +860,7 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                                              'start':indexes['start'], 
                                               'end':indexes['end'],} )  
                 continue
-            #objectMap['PatternBurst'][-1].update(pbd)
-            # ^^^ TODO: Removing 
+            raise RuntimeError("PatternBurst name not found for file: %s."%(fileKey))
     
         if debug: print("DEBUG: (%s): Done..."%(func))
 
@@ -852,12 +872,9 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
     # PatternBurst and Pattern blocks shall be unique. "
     if 'Pattern' in tplp[fileKey]:
         objectMap['Pattern'] = []
-        print("\nSanity Checking Pattern blocks...")
-
-
+        print("\nDEBUG: (%s): Sanity Checking Pattern blocks..."%(func))
         RE_Pattern_DomainName_no_dqoutes = re.compile("^Pattern\s+(?P<name>\w+)\s*\{")
         RE_Pattern_DomainName_with_dqoutes = re.compile("^Pattern\s+(?P<name>\".*\")\s*\{")
-        
         for indexes in tplp[fileKey]['Pattern']: 
             tmp = string[indexes['start']:indexes['end'] + 1]
             match = RE_Pattern_DomainName_no_dqoutes.search(tmp)
@@ -874,7 +891,209 @@ def tplp_check_and_object_builder(tplp, fileKey, string, debug = False):
                                              'start':indexes['start'], 
                                               'end':indexes['end'],} )  
                 continue 
-            raise RuntimeError("Found not Pattern name.")
+            raise RuntimeError("Pattern name not found for file: %s."%(fileKey))
+
+
+    if 'Environment' in tplp[fileKey]:
+        objectMap['Environment'] = []
+        print("\nDEBUG: (%s): Sanity Checking Environment blocks..."%(func))
+        singleGlobal = False
+        RE_Environment_global = re.compile("^Environment\s*\{")
+        RE_Environment_DomainName_no_dqoutes   = re.compile("^Environment\s+(?P<name>\w+)\s*\{")
+        RE_Environment_DomainName_with_dqoutes = re.compile("^Environment\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['Environment']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            # Match for global: 
+            match = RE_Environment_global.search(tmp)
+            if match: 
+                if singleGlobal: 
+                    raise RuntimeError("Found more than one global Environment.")
+                else: 
+                    singleGlobal = True
+                    objectMap['Environment'].append({'name'  : KLU.References.GLOBAL, 
+                                                      'start' : indexes['start'], 
+                                                      'end'   : indexes['end']})
+                    continue 
+            # Match for NO double qoutes:      
+            match = RE_Environment_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Environment']: 
+                    raise RuntimeError("All Environment domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Environment'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue 
+            # Match for double qoutes:      
+            match = RE_Environment_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Environment']: 
+                    raise RuntimeError("All Environment domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Environment'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue
+
+    if 'Variables' in tplp[fileKey]:
+        objectMap['Variables'] = []
+        print("\nDEBUG: (%s): Sanity Checking Variables blocks..."%(func))
+        singleGlobal = False
+        RE_Variables_global = re.compile("^Variables\s*\{")
+        RE_Variables_DomainName_no_dqoutes   = re.compile("^Variables\s+(?P<name>\w+)\s*\{")
+        RE_Variables_DomainName_with_dqoutes = re.compile("^Variables\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['Variables']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            # Match for global: 
+            match = RE_Variables_global.search(tmp)
+            if match: 
+                if singleGlobal: 
+                    raise RuntimeError("Found more than one global Variables.")
+                else: 
+                    singleGlobal = True
+                    objectMap['Variables'].append({'name'  : KLU.References.GLOBAL, 
+                                                      'start' : indexes['start'], 
+                                                      'end'   : indexes['end']})
+                    continue 
+            # Match for NO double qoutes:      
+            match = RE_Variables_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Variables']: 
+                    raise RuntimeError("All Variables domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Variables'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue 
+            # Match for double qoutes:      
+            match = RE_Variables_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Variables']: 
+                    raise RuntimeError("All Variables domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Variables'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue
+
+    if 'Procedures' in tplp[fileKey]:
+        objectMap['Procedures'] = []
+        print("\nDEBUG: (%s): Sanity Checking Procedures blocks..."%(func))
+        singleGlobal = False
+        RE_Procedures_global = re.compile("^Procedures\s*\{")
+        RE_Procedures_DomainName_no_dqoutes   = re.compile("^Procedures\s+(?P<name>\w+)\s*\{")
+        RE_Procedures_DomainName_with_dqoutes = re.compile("^Procedures\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['Procedures']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            # Match for global: 
+            match = RE_Procedures_global.search(tmp)
+            if match: 
+                if singleGlobal: 
+                    raise RuntimeError("Found more than one global Procedures.")
+                else: 
+                    singleGlobal = True
+                    objectMap['Procedures'].append({'name'  : KLU.References.GLOBAL, 
+                                                      'start' : indexes['start'], 
+                                                      'end'   : indexes['end']})
+                    continue 
+            # Match for NO double qoutes:      
+            match = RE_Procedures_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Procedures']: 
+                    raise RuntimeError("All Procedures domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Procedures'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue 
+            # Match for double qoutes:      
+            match = RE_Procedures_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['Procedures']: 
+                    raise RuntimeError("All Procedures domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['Procedures'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue
+    if 'MacroDefs' in tplp[fileKey]:
+        objectMap['MacroDefs'] = []
+        print("\nDEBUG: (%s): Sanity Checking MacroDefs blocks..."%(func))
+        singleGlobal = False
+        RE_MacroDefs_global = re.compile("^MacroDefs\s*\{")
+        RE_MacroDefs_DomainName_no_dqoutes   = re.compile("^MacroDefs\s+(?P<name>\w+)\s*\{")
+        RE_MacroDefs_DomainName_with_dqoutes = re.compile("^MacroDefs\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['MacroDefs']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            # Match for global: 
+            match = RE_MacroDefs_global.search(tmp)
+            if match: 
+                if singleGlobal: 
+                    raise RuntimeError("Found more than one global MacroDefs.")
+                else: 
+                    singleGlobal = True
+                    objectMap['MacroDefs'].append({'name'  : KLU.References.GLOBAL, 
+                                                      'start' : indexes['start'], 
+                                                      'end'   : indexes['end']})
+                    continue 
+            # Match for NO double qoutes:      
+            match = RE_MacroDefs_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['MacroDefs']: 
+                    raise RuntimeError("All MacroDefs domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['MacroDefs'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue 
+            # Match for double qoutes:      
+            match = RE_MacroDefs_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['MacroDefs']: 
+                    raise RuntimeError("All MacroDefs domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['MacroDefs'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue
+
+
+
+    if 'DCLevels' in tplp[fileKey]:
+        objectMap['DCLevels'] = []
+        print("\nDEBUG: (%s): Sanity Checking DCLevels blocks..."%(func))
+        singleGlobal = False
+        RE_DCLevels_global = re.compile("^DCLevels\s*\{")
+        RE_DCLevels_DomainName_no_dqoutes   = re.compile("^DCLevels\s+(?P<name>\w+)\s*\{")
+        RE_DCLevels_DomainName_with_dqoutes = re.compile("^DCLevels\s+(?P<name>\".*\")\s*\{")
+        
+        for indexes in tplp[fileKey]['DCLevels']: 
+            tmp = string[indexes['start']:indexes['end'] + 1]
+            # Match for global: 
+            match = RE_DCLevels_global.search(tmp)
+            if match: 
+                if singleGlobal: 
+                    raise RuntimeError("Found more than one global DCLevels.")
+                else: 
+                    singleGlobal = True
+                    objectMap['DCLevels'].append({'name'  : KLU.References.GLOBAL, 
+                                                      'start' : indexes['start'], 
+                                                      'end'   : indexes['end']})
+                    continue 
+            # Match for NO double qoutes:      
+            match = RE_DCLevels_DomainName_no_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['DCLevels']: 
+                    raise RuntimeError("All DCLevels domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['DCLevels'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue 
+            # Match for double qoutes:      
+            match = RE_DCLevels_DomainName_with_dqoutes.search(tmp)
+            if match: 
+                domain = match.group('name')
+                if domain in objectMap['DCLevels']: 
+                    raise RuntimeError("All DCLevels domain names must be unique; 2 instances of %s"%(domain))
+                    # ^^^ TODO: Is this true or would it be considered an overwrite? 
+                objectMap['DCLevels'].append({'name': domain, 'start':indexes['start'], 'end':indexes['end']})
+                continue
 
     # TODO: Other toplevel checks
 
@@ -1107,3 +1326,29 @@ def patternburst_map_maker(tokens, symbolTable, debug = False):
 
 def greetings():
     return "Greetings from PySTIL.utils"
+
+# TODO: Extract only subset character range fomr file 
+# without having to read the entire file
+def file_as_string(file, debug = False): 
+    """
+    This function will return a file as text string. 
+    This funciton can handle both ASCII (text) files and 
+    gzip compressed files. 
+
+    The gzip compression check is handled internally. 
+    """
+    func = "file_as_string"
+
+    if file.endswith(".gz"): gunzip = True 
+    else: gunzip = False 
+    if not gunzip: 
+        if debug: print("DEBUG: (%s): FileKey not gzipped: %s"%(func,file))
+        f = open(file,'r')
+        string = f.read()
+        f.close()
+    else: 
+        if debug: print("DEBUG: (%s): FileKey is gzipped: %s"%(func,file))
+        f = gzip.open(file,'rt')
+        string=f.read()
+        f.close()    
+    return string

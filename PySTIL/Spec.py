@@ -66,7 +66,7 @@ class SpecBlocks(sutils.Blocks):
 # the spec table. This name is for reference only. It is not used in
 # any subsequent references. All defined spec_names shall be unique."
 class Spec(object):
-    def __init__(self, name = sutils.GLOBAL): 
+    def __init__(self, name = sutils.GLOBAL, file=""): 
         self.name = name 
         self.categories = {} # TODO: Name->Object
         self.variables  = {} 
@@ -116,9 +116,11 @@ class Category(object):
         # want to reuse my Category block across many Spec instances.  
         self.vars = {} # varName -> {Min, Typ, Max, Direct}
 
-    def add(self,var,value="",Min="",Max="",Typ=""):  
+    def add(self,var,value="",Min="",Max="",Typ="", debug=False):  
         if var in self.vars: 
-            raise RuntimeError("Variable %s is already set."%(var))
+            #raise RuntimeError("Variable %s is already set."%(var))
+            if debug: print("Variable %s is already set."%(var))
+            return 
         tmpDict = {} 
         if Min: tmpDict['Min'] = Min
         if Typ: tmpDict['Typ'] = Typ
@@ -173,7 +175,7 @@ def create_spec(string, name = "", file = "", debug=False):
     func   = "create_spec"
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
-    spec   = Spec(name=name)
+    spec   = Spec(name=name, file=file)
     if debug: 
         print("DEBUG: (%s): Tokens: %s "% (func, tokens))
         print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))

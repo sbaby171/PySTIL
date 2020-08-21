@@ -1,4 +1,4 @@
-import re
+import sys, re
 from collections import OrderedDict
 import STILutils as sutils
 import SymbolTable as STBL
@@ -15,8 +15,9 @@ class PatternBurstBlocks(sutils.Blocks):
      
 
 class PatternBurst(object):
-    def __init__(self, name):
+    def __init__(self, name, file=""):
         self.name = name 
+        self.file = file
         self.blocks = {"PatList": [], "ParallelPatList":[], "PatSet":[]}
         self.ordering = [] # [(type,index)]
 
@@ -27,6 +28,9 @@ class PatternBurst(object):
         self.Start = None 
         self.Stop = None 
         self.Termination = None 
+    
+    def get_name(self,): return self.name 
+    def get_file(self,): return self.file
     
     def add(self, entity): 
 
@@ -72,9 +76,13 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
     func   = "create_PatternBurst"
     tokens = sutils.lex(string=string, debug=debug)
     sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
-    pb     = PatternBurst(name=name)
+    pb     = PatternBurst(name=name, file=file)
+
     if debug: 
-        print("DEBUG: (%s): Tokens: %s "% (func, tokens))
+        print("DEBUG: (%s): Tokens:"% (func))
+        for i, token in enumerate(tokens,start=0): 
+            print("DEBUG: (%s): %d: %s"%(func,i,token))
+
         print("DEBUG: (%s): SymbolTable: %s"%(func, sytbl))
     
     # Parse over the outside layers first: 
@@ -184,6 +192,12 @@ def create_PatternBurst(string, name = "", file = "", debug=False):
             if tokens[j]['tag'] in ['SyncStart','Independent','LockStep']: 
                 spb.mode = tokens[j]['token'] 
                 j += 1; continue 
+
+            if tokens[j]['tag'] == 'Ann': 
+                j = sytbl.get_next_instance(tag='*}',startIndex=j)
+                continue 
+
+
             if tokens[j]['tag'] == 'identifier': 
                 patname = tokens[j]['token'] 
                 spb.add_pattern(patname)

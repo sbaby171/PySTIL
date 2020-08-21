@@ -8,7 +8,8 @@ def _handle_cmd_args():
     parser.add_argument("--debug", help="Increase console logging", action="store_true")
     parser.add_argument("--Timings", help="Dump Timing findings", action="store_true")
     parser.add_argument("--PatternBursts", help="Dump PatternBurst findings", action="store_true")
-    parser.add_argument("--Specs", help="Dump Speec findings", action="store_true")
+    parser.add_argument("--Specs", help="Dump Spec findings", action="store_true")
+    parser.add_argument("--SignalGroups", help="Dump SignalGroups findings", action="store_true")
     parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
     parser.add_argument("stil", help="STIL file path",)
     args = parser.parse_args()
@@ -18,51 +19,105 @@ def _handle_cmd_args():
 
 if __name__ == "__main__":
     args = _handle_cmd_args()
-    # Standard Parsing
-    stil = pystil.STIL(file = args.stil, debug = args.debug)
 
-    # TODO: Need 'best' way to time the function. 
-    #https://stackoverflow.com/questions/7370801/how-to-measure-elapsed-time-in-python?page=1&tab=active#tab-top
-    start = timeit.timeit()
-    stil.parse()
-    end = timeit.timeit()
-    print("Execution time: %s"%(end-start))
-    
-    #print(stil._tplp)
-    stil.print_tplp() 
+    # Various constructors: 
+    stil = pystil.STIL(readpath = args.stil, debug = args.debug) 
+ 
+    # Reading: 
+    # --------
+    # Can also provide readpath here, 
+    # iff not already set.
+    stil.read() 
+    stil.print_tplp()
+
+    # Writing: 
+    #stil.write()
+    # This will write STIL file(s).  
+
+
+    # Includes: 
+    # --------: 
+    hasIncludes = False 
+    print("\nIncludes:")
+    print("========:")
+    if stil.has_Includes():
+        hasIncludes= True
+        includes = stil.Includes()
+        for entry in includes: 
+            print("Base file: %s"%(entry))
+            for instance in includes[entry]: 
+                print("  - %s"%(instance))
+    else: print("This STIL instance contains no 'Include'.")
+
+
+
+    # SignalGroups: 
+    # ------------: 
+    if args.SignalGroups: 
+        print("\nSignalGroups: ")
+        print("=============:")
+        print("SignalGroups Name Blocks (domains):")
+        domains = stil.SignalGroups().names()
+        for domain in domains: 
+            print("  - %s"%(domain))
+        #pb = stil.PatternBursts().get(domains[0])
+        #print("Patterns Referenced in %s:"%(domains[0]))
+        #for pat in pb.patterns(): 
+        #    print(" - %s"%(pat))
+        print("")
+
+    # PatternBurst: 
+    # ------------: 
+    if args.PatternBursts: 
+        print("\nPatternBursts: ")
+        print("=============:")
+        patternBurstBlocks = stil.PatternBursts()
+        print("PatternBurst Name Blocks (domains):")
+        domains = patternBurstBlocks.names()
+        for domain in domains: 
+            print("  - %s,  file: %s"%(domain, patternBurstBlocks.get(domain).get_file()))
+        print("")
+        pb = stil.PatternBursts().get(domains[0])
+        print("Patterns Referenced in %s:"%(domains[0]))
+        for pat in pb.patterns(): 
+            print(" - %s"%(pat))
+        print("")
+
 
     # Timing: 
     # ---------------------: 
     if args.Timings: 
-        print("Timings: ")
+        print("\nTimings: ")
         print("=======:")
-        timings = stil.Timings()
-        print("Timing Domains: %s"%(timings.names()))
+        timingBlocks = stil.Timings()
+
+        print("Timing Name Blocks (domains):")
+        domains = timingBlocks.names()
+        for domain in domains: 
+            print("  - %s, file: %s"%(domain, timingBlocks.get(domain).get_file()))
+        print("")
+
         print("Timing Wavetables:")
-        for wvtbl in timings.WaveformTables(): 
+        for wvtbl in timingBlocks.WaveformTables(): 
             print("  - %s"%(wvtbl.name))
         print("")
 
     # Spec: 
     # ------------: 
+    # TODO: nv-028 seeing instance of multiple variable instance within Spec/Category. 
     if args.Specs: 
-        print("Specs: ")
+        print("\nSpecs: ")
         print("=============:")
-        print("Domains: %s"%(stil.Specs().names()))
+        print("Spec Name Blocks (domains):")
+        domains = stil.Specs().names()
+        for domain in domains: 
+            print("  - %s"%(domain))
         print("Categories: %s"%(stil.Specs().Categories()))
 
-    # PatternBurst: 
-    # ------------: 
-    if args.PatternBursts: 
-        print("PatternBursts: ")
-        print("=============:")
-        print("Domains: %s"%(stil.PatternBursts().names()))
-        pb = stil.PatternBursts().get("\"b_ga106_a01_iobist_pll_fb_htol_p2G_1p35_hssa_dp_cont_dqdata_prbs_IN_D15_d_4\"")
-        print("Patterns Referenced:")
-        for pat in pb.patterns(): 
-            print(" - %s"%(pat))
-        print("")
-    
+
+
+
+
 
 
     # Query parts
