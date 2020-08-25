@@ -16,6 +16,12 @@
 
 * It is possible to parse the entire STIL from the beginning as well. 
 
+* Processing and environment considerations of the following topics shall be made: 
+  -  OS platform: Windows and Linux
+  - Text processing & Gzip Processing
+  - Read and Write of STIL files
+  - Usage of `Includes`
+
 * If multiple variables are defined within a single Spec/Category block, the 
 first definition is kept and all other are ignored. 
 
