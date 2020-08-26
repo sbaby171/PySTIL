@@ -9,11 +9,16 @@ Header {
    }
 }
 
-Include "../all_timing.stil"; 
-Include "$DESIGN_STUFF/STIL_scan.stil" IfNeed ScanStructures; 
 
 Signals {
-  CP In; MR In; S0 In; S1 In; D0 In {ScanIn;} D7 In;Q0 Out;Q7 Out {ScanOut;}
+  CP In; 
+  MR In; 
+  S0 In; 
+  S1 In; 
+  D0 In {ScanIn;} 
+  D7 In;
+  Q0 Out;
+  Q7 Out {ScanOut;}
   IO[0..7] InOut;
 }
 SignalGroups iobus {
@@ -37,6 +42,10 @@ Timing {
 	          LH { '80ns' L/H; } }
     }
   }
+}
+ 
+Timing ExtraTiming {
+  
 }
 
 PatternBurst Burst1 {
