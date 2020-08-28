@@ -36,6 +36,19 @@ def lex(string='', file='', debug=False):
     This function takes in either a string of file path and returns 
     a list of tokens. The tokens are, of course, based on the STIL 
     standard. 
+
+
+    Tokens: 
+        Signal Shorthand: all tokens will be condensed an taged with 'identifier' 
+            ex) 'IO[0..7]'
+
+        special = [';','.','{','}','-','+','!','@','#','$','%','^','&','*',
+                   '(',')','=','|','`','~','[',']',':','<','>','.',',',
+                  '\'', # TODO: This may need to move... 
+                  ]
+    Tags: 
+        'identifier', special, STIL keywords
+      
     '''
     func = "lex"
     
