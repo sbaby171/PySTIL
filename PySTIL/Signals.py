@@ -1,6 +1,13 @@
 import re
 import STILutils as sutils
 import SymbolTable as STBL
+
+# NOTE: Remember, there is only one Signals block per STIL translation.
+#class SpecBlocks(sutils.Blocks): 
+#    def __init__(self): 
+#        super(SpecBlocks, self).__init__()
+#    def add(self, spec): 
+#        super(SpecBlocks, self).add(spec, Spec)
  
 class Signals(object): 
     def __init__(self, *args, **kwargs): 
@@ -104,84 +111,83 @@ class Signals(object):
         return retList
 
 
-    @staticmethod
-    def create_signals(string, file = "", debug=False): 
-        func = "Signals.create_signals"
-        tokens = sutils.lex(string=string, debug=debug)
-        sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
+def create_signals(string, file = "", debug=False): 
+    func = "Signals.create_signals"
+    tokens = sutils.lex(string=string, debug=debug)
+    sytbl  = STBL.SymbolTable(tokens=tokens, debug=debug) 
 
-        if debug: 
-            print("Tokens: ", tokens)
-            print("SymbolTable: ", sytbl)
-        # TODO: Create each object
-        #  - Need to do this by eating the tokens (use symbolt table to help you)
-        signals = {}
-        typeList = ["In", "Out", "InOut", "Supply", "Psuedo"]
+    if debug: 
+        print("Tokens: ", tokens)
+        print("SymbolTable: ", sytbl)
+    # TODO: Create each object
+    #  - Need to do this by eating the tokens (use symbolt table to help you)
+    signals = {}
+    typeList = ["In", "Out", "InOut", "Supply", "Psuedo"]
 
-        token = {}
-        signalName = ""
-        signalType = ""
-        i = 2; end = len(tokens) - 1; cbs = 0; 
-        while i <= end: 
-            token = tokens[i]
-            if token['tag'] == "}": 
-                cbs -= 1
-                if cbs == 0: 
-                    signalsName = ""; signalType = "";
-                    i += 1; continue 
-            if cbs == 1: 
-                if token['tag'] == "ScanIn": 
-                    if tokens[i+1]['tag'] == ';': 
-                        signals[signalName] = {"type":signalType,
-                                                   "ScanIn":True}
-                        if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-                        i+=1; continue 
-                    else: 
-                        raise RuntimeError("Not ready to handle decimal scans")
-                        # TODO: Else, use symbol table to grab the next token index 
-                        # of the semicolon.
-                if token['tag'] == "ScanOut": 
-                    if tokens[i+1]['tag'] == ';': 
-                        signals[signalName] = {"type":signalType,
-                                                   "ScanOut":True}
-                        if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-                        i+=1; continue 
-                    else: 
-                        raise RuntimeError("Not ready to handle decimal scans")
-                        # TODO: Else, use symbol table to grab the next token index 
-                        # of the semicolon.
+    token = {}
+    signalName = ""
+    signalType = ""
+    i = 2; end = len(tokens) - 1; cbs = 0; 
+    while i <= end: 
+        token = tokens[i]
+        if token['tag'] == "}": 
+            cbs -= 1
             if cbs == 0: 
-                if token['tag'] == "identifier": 
-                    signalName = token['token']
-                    if tokens[i+1]['tag'] not in typeList: 
-                        print("Current: ", i, token)
-                        print("Next   : ", i+1, tokens[i+1])
-                        print("  - ", tokens[i+1]['tag'], type(tokens[i+1]['tag']))
-                        raise ValueError("Invalid syntax of Signals")
-
-                    else: 
-                        signalType = tokens[i+1]['tag']
-                        if tokens[i+2]['tag'] == ';': 
-                            if signalName in signals: 
-                                raise RuntimeError("Signal %s is already defined"%(signalName))
-                                # ^^^ TODO: Is this valid? 
-                            else: 
-                                signals[signalName] = {"type":signalType}
-                                if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
-
-                                signalsName = ""; signalType = "";
-                                i += 3; continue 
-                        elif tokens[i+2]['tag'] == "{": 
-                            cbs += 1 
-                            i += 3; continue 
-                        else: 
-                            raise RuntimeError("Invalid syntax (i+2 != ; || {)")
+                signalsName = ""; signalType = "";
+                i += 1; continue 
+        if cbs == 1: 
+            if token['tag'] == "ScanIn": 
+                if tokens[i+1]['tag'] == ';': 
+                    signals[signalName] = {"type":signalType,
+                                               "ScanIn":True}
+                    if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                    i+=1; continue 
                 else: 
-                    raise RuntimeError("Invalid syntax (cbs == 0 but not identifier)")
-            i += 1
+                    raise RuntimeError("Not ready to handle decimal scans")
+                    # TODO: Else, use symbol table to grab the next token index 
+                    # of the semicolon.
+            if token['tag'] == "ScanOut": 
+                if tokens[i+1]['tag'] == ';': 
+                    signals[signalName] = {"type":signalType,
+                                               "ScanOut":True}
+                    if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
+                    i+=1; continue 
+                else: 
+                    raise RuntimeError("Not ready to handle decimal scans")
+                    # TODO: Else, use symbol table to grab the next token index 
+                    # of the semicolon.
+        if cbs == 0: 
+            if token['tag'] == "identifier": 
+                signalName = token['token']
+                if tokens[i+1]['tag'] not in typeList: 
+                    print("Current: ", i, token)
+                    print("Next   : ", i+1, tokens[i+1])
+                    print("  - ", tokens[i+1]['tag'], type(tokens[i+1]['tag']))
+                    raise ValueError("Invalid syntax of Signals")
 
-        # TODO: return signals? 
-        signalsObject = Signals(mapping = signals)
+                else: 
+                    signalType = tokens[i+1]['tag']
+                    if tokens[i+2]['tag'] == ';': 
+                        if signalName in signals: 
+                            raise RuntimeError("Signal %s is already defined"%(signalName))
+                            # ^^^ TODO: Is this valid? 
+                        else: 
+                            signals[signalName] = {"type":signalType}
+                            if debug: print("DEBUG: (%s): Added Signal: '%s' = %s"%(func, signalName, signals[signalName]))
 
-        return signalsObject
+                            signalsName = ""; signalType = "";
+                            i += 3; continue 
+                    elif tokens[i+2]['tag'] == "{": 
+                        cbs += 1 
+                        i += 3; continue 
+                    else: 
+                        raise RuntimeError("Invalid syntax (i+2 != ; || {)")
+            else: 
+                raise RuntimeError("Invalid syntax (cbs == 0 but not identifier)")
+        i += 1
+
+    # TODO: return signals? 
+    signalsObject = Signals(mapping = signals)
+
+    return signalsObject
        
