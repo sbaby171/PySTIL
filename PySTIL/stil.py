@@ -20,14 +20,11 @@ class STIL(object):
         if "debug" in kwargs: self.debug = kwargs["debug"]
         else: self.debug = False
 
-
-
         self._readpath  = readpath
         self._writepath = writepath 
         self._read = False 
         self._tplp = OrderedDict() 
 
-        
         # TODO: There are technical worries about always loading the STIL in a 
         # string and having to keep it as a string. The need for keeping it as 
         # a string is becasue we do a series of lookups for deeper analysis if 
@@ -35,42 +32,6 @@ class STIL(object):
         # of 'Includes' in the STIL file. 
         # 
 
-        """
-        if "string" in kwargs: self._string = kwargs["string"]
-        if not "file" in kwargs: self._filepath = None 
-        else:     
-            if not os.path.isfile(kwargs["file"]): 
-                raise ValueError("Provided file doesn't exist: %s"%(kwargs['file']))
-            # TODO: Handle ?move to tmp? and gunzip
-
-            file = kwargs["file"]
-
-            if file.endswith(".gz"): 
-                gunzip = True 
-                print("DEBUG: Setting gunzip flag true. Found '.gz' at suffix.")
-            else: 
-                gunzip = False 
-
-            if not gunzip: 
-                self._filepath = file
-                f = open(self._filepath,'r')
-                self._string = f.read()
-                f.close()
-            elif gunzip: 
-                self._filepath = file
-                f=gzip.open(file,'rt')
-                self._string=f.read()
-                f.close()
-            #print(self._string)
-
-
-            #self._filepath = kwargs['file']
-            #f = open(self._filepath,'r')
-            #self._string = f.read()
-            #f.close()
-        
-        if not self._string: raise ValueError("Must provide either 'string' OR 'file'.")
-        """
 
         #if "all" in kwargs: self._all = kwargs["all"]
         #else: self._all = False 
@@ -89,16 +50,16 @@ class STIL(object):
         # maye cause many issues later on. 
 
         self.__parsed = False 
-        self.__signals = None # NOTE: Will be an instance of 'Signals' class. 
         self.signal = None 
         # NOTE: Because there can only be a single Signal block per stil 
         # translaion
-        
-
 
 
         self.__signalGroups = [] # TODO: Remove all remebrants
 
+
+        self.__signals = None # TODO: Remove. Relic of the past 
+        self._SignalsBlock = None # NOTE: Will be an instance of 'Signals' class. 
         self._SignalGroupsBlocks = None
         self._TimingBlocks = None 
         self._SpecBlocks = None 
@@ -334,6 +295,25 @@ class STIL(object):
     # to the core STIL."
 
  
+    def Signals(self,): 
+        if not self._read: 
+            raise RuntimeError("Make sure to parse STIL object before making queries.")
+        if self._SignalsBlock: return self._SignalsBlock 
+
+        # Create the Signal instances by referring to the tplp. 
+        for fileKey, value in self._tplp.items(): 
+            #if "Signals" in self._tplp[fileKey]: 
+            for entry in self._tplp[fileKey]["Signals"]:   
+                # -------------------------------------------------------: 
+                string = sutils.file_as_string(self._fileKeyToPathDict[fileKey])
+                # -------------------------------------------------------
+                tmp = string[entry['start']:entry['end'] + 1] # TODO: Not proper for includes.
+                self._SignalsBlock = Signals.create_signals(tmp, file = fileKey, debug = self.debug)
+                # TODO: Should fileKey be passed in at 'create_signals'? 
+                return self._SignalsBlock 
+        # TODO: Becasue we return after the first instance, during the 
+        # sanity checking at parse, we must ensure that all other Signal
+        # entries are deleted. 
 
 
     def Timings(self,): 
