@@ -22,6 +22,9 @@
   - Read and Write of STIL files
   - Usage of `Includes`
 
+* The `Signals` block is one of the few (maybe only) where the standards allows only 
+one instance. After the first one is found, all others are ignored. 
+
 * If multiple variables are defined within a single Spec/Category block, the 
 first definition is kept and all other are ignored. 
 
