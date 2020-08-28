@@ -10,6 +10,7 @@ def _handle_cmd_args():
     parser.add_argument("--PatternBursts", help="Dump PatternBurst findings", action="store_true")
     parser.add_argument("--Specs", help="Dump Spec findings", action="store_true")
     parser.add_argument("--SignalGroups", help="Dump SignalGroups findings", action="store_true")
+    parser.add_argument("--Signals", help="Dump Signal findings", action="store_true")
     parser.add_argument("--all", help="Tokenize entire STIL", action="store_true")
     parser.add_argument("stil", help="STIL file path",)
     args = parser.parse_args()
@@ -50,6 +51,14 @@ if __name__ == "__main__":
     else: print("This STIL instance contains no 'Include'.")
 
 
+    # Signals 
+    # ------------: 
+    if args.Signals:       
+        print("\nSignals: ")
+        print("=========:")
+        signals = stil.Signals()
+
+        print(signals.string())
 
     # SignalGroups: 
     # ------------: 
@@ -74,10 +83,11 @@ if __name__ == "__main__":
         for domain in domains: 
             print("  - %s,  file: %s"%(domain, patternBurstBlocks.get(domain).get_file()))
         print("")
-        pb = stil.PatternBursts().get(domains[0])
-        print("Patterns Referenced in %s:"%(domains[0]))
-        for pat in pb.patterns(): 
-            print(" - %s"%(pat))
+        if domains: 
+            pb = stil.PatternBursts().get(domains[0])
+            print("Patterns Referenced in %s:"%(domains[0]))
+            for pat in pb.patterns(): 
+                print(" - %s"%(pat))
         print("")
 
 
