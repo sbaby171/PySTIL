@@ -102,6 +102,9 @@ class WaveformTable(object):
 
     def signals(self, ): 
         return self.waveforms.signals() 
+    
+    def contains(self, signal): 
+        return self.waveforms.contains(signal)
 
 
 
@@ -144,6 +147,11 @@ class Waveforms(object):
 
     def signals(self,): 
         return list(self.waveforms.keys())
+
+    def contains(self, signal): 
+        if signal in self.waveforms: return True
+        else: return False
+
         
 
 

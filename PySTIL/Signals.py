@@ -109,6 +109,13 @@ class Signals(object):
             if keep: 
                 retList.append(signal)
         return retList
+    
+    def contains(self, signal ): 
+        if signal in self._mapping: return True
+        for shorthand in self._shorthand: 
+            if signal in self._shorthand[shorthand]: return True
+        return False 
+             
 
 
 def create_signals(string, file = "", debug=False): 

@@ -59,6 +59,23 @@ if __name__ == "__main__":
         signals = stil.Signals()
 
         print(signals.string())
+        print("")
+
+        # Is signal present? 
+        signalName = "CP"
+        if signals.contains(signalName):print("Signals block contians: %s"%(signalName))
+        else: print("Signals block doesn't contian: %s"%(signalName))
+
+        signalName = "IO[5]"
+        if signals.contains(signalName): print("Signals block contians: %s"%(signalName))
+        else: print("Signals block doesn't contian: %s"%(signalName))
+
+        signalName = "IO[0..7]"
+        if signals.contains(signalName): print("Signals block contians: %s"%(signalName))
+        else: print("Signals block doesn't contian: %s"%(signalName))
+
+        # TODO: Range? IO[3..7]
+            
 
     # SignalGroups: 
     # ------------: 
@@ -105,8 +122,17 @@ if __name__ == "__main__":
         print("")
 
         print("Timing Wavetables:")
-        for wvtbl in timingBlocks.WaveformTables(): 
+        wavetables = timingBlocks.WaveformTables()
+        for wvtbl in wavetables: 
             print("  - %s"%(wvtbl.name))
+            signalName = "CP"
+            if wvtbl.contains(signalName): print("    - Contains: %s"%(signalName))
+            else: print("    - Doesn't contain: %s"%(signalName))
+        #for wvtbl in timingBlocks.WaveformTables(): 
+        #    print("  - %s"%(wvtbl.name))
+
+
+
         print("")
 
     # Spec: 
