@@ -24,17 +24,74 @@ class SignalGroups(object):
     def get_file(self, ): 
         return self.file
 
-    def get_groups(self, signal=""): 
-        """
-        Parameter `signal` is not a regex. 
+
+    
+    def get_signals(self, group):
+        """Given a group, return the signals defintion"""
+        if group in self._mapping: 
+            return self._mapping[group]
+        else: return []
+ 
+    def group(self, group): 
+        """This returns the single specific instance of the group."""
+        if group in self._mapping: 
+            return self._mapping[group]
+        else: return None
+
+    # TODO: Add regex for group names? 
+    def groups(self, signal=""): 
+        """ Return a list of groups.
+
+        If signal is provided, only those groups containing the signal will
+        be returned. Note, `signal` is not a regex. 
+
+        If signal is not provided, then all groups are returned. 
         """
         retlist = []
         if not signal: return list(self._mapping.keys())
-
         for group in self._mapping: 
             if signal in self._mapping[group]['signals']:
                 retlist.append(group) 
         return retlist
+    
+    def group_names(self,):
+        """Return a list of all the group names."""
+        return list(self._mapping.keys())
+
+
+    # TODO: Extend to N number if needed.....
+    def find_common_and_diff_signals(self, group1, group2): 
+        """Find the common and different signals between two groups."""
+        if group1 not in self._mapping: 
+            raise ValueError("Group %s is not present."%(group1))
+        if group2 not in self._mapping: 
+            raise ValueError("Group %s is not present."%(group2))
+
+        signalList1 = self._mapping[group1]["signals"]
+        signalList2 = self._mapping[group2]["signals"]
+        common = []
+        diff = []
+
+        i = 0; iend = len(signalList1) - 1
+        j = 0; jend = len(signalList2) - 1
+        while i <= iend: 
+            signal1 = signalList1[i]
+            j = 0; 
+            while j <= jend: 
+                if signal1 == signalList2[j]: 
+                    common.append(signal1)
+                    del signalList2[j]
+                    j = jend + 1; continue
+                else: 
+                    if j == jend: 
+                        diff.append(signal1)
+                j+=1 
+            i += 1
+        
+        # Update what ever is left in signalList2 to diff 
+        diff.extend(signalList2)
+        return common , diff 
+
 
 # TODO: This doesn't have to be a static method. It merely be a funciton.
 def create_signalGroups(string, name = "", file = "", debug=False):
