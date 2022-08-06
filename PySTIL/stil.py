@@ -21,12 +21,22 @@ import funcs
 #       al parse them out. 
 #     - NOTE: There is an optimzation to skip skip all Pattern searching after
 #       the first one is found. This is going to be set as default
+#     Q: Whate the implication from the PatternExec? I seeing only two 
+#     references: Timing and PatternBurst
 # 
 # ============================================================================:
 class STIL(object): 
     def __init__(self,*args,**kwargs): 
         pass 
 # ============================================================================:
+# Q: What is a valid syntax for a signal name: 
+# - SIG_NAME See 6.10 in 1450.0
+#   data[0..36] -> data[0], data[1], ..., data[35], data[36]
+#   "a&b"[0..7] -> "a&b"[0], "a&b"[1], ..., "a&b"[6], "a&b"[7]
+#   The brackets, when present, become pat of the name reference, and the 
+#   the values inside of the braket are interpreted as integer values only
+#   -> data[0] === data[00] != data00
+#   Ascending ([0..7]) or descending ([7..0]) are allowed. 
 class Signals(OrderedDict): 
     def __init__(self,name):
         super(Signals,self).__init__()
@@ -48,15 +58,13 @@ def build_Signals(tokens):
     elif tokens[1]["tag"] == "{": fi = 2 
     else: raise RuntimeError("Issue with Signals tokens: %s"%(tokens))
     if fi == -1: raise RuntimeError("fi is off")
-
     SG = Signals(domain)
     i = fi; end = len(tokens)-1; cbs = 1; 
     while i <= end: 
         # EXIT----------------------------------------------------------------:
         if tokens[i]["token"] == "}": 
             cbs -= 1; 
-            if cbs == 0: 
-                break 
+            if cbs == 0: break 
         # --------------------------------------------------------------------:
         if tokens[i]["tag"] == "identifier":  # NOTE" Simple defintion
             if tokens[i+2]["tag"] == ";": 
@@ -104,8 +112,7 @@ def build_SignalGroups(tokens):
         # EXIT----------------------------------------------------------------:
         if tokens[i]["token"] == "}": 
             cbs -= 1; 
-            if cbs == 0: 
-                break 
+            if cbs == 0: break 
         # --------------------------------------------------------------------:
         if tokens[i]['tag'] == "identifier": 
             if tokens[i+1]['tag'] != "=": 
@@ -115,10 +122,10 @@ def build_SignalGroups(tokens):
             j = i 
             while j < end:
                 if tokens[j]['tag'] == ";": 
-                    sname = tokens[i]["token"]
-                    expression = "".join([tokens[k]["token"] for k in range(i+2,j+1)])
-                    print("DEBUG: [%s]: Adding: %s = %s"%(func,sname,expression))
-                    sg.add_expr(sname,expression)
+                    n = tokens[i]["token"]
+                    e = "".join([tokens[k]["token"] for k in range(i+2,j+1)])
+                    print("DEBUG: [%s]: Adding: %s = %s"%(func,n,e))
+                    sg.add_expr(n,e)
                     i = j; break
                 j += 1
                 if j == end:raise RuntimeError("bad")
@@ -126,11 +133,24 @@ def build_SignalGroups(tokens):
         i += 1
     return sg 
 # ============================================================================:
+# TODO: If the Signal and SignalGroups block do not have to be referenced 
+# by the PatternExec or Timing, then how/where is it selected if there are more
+# than one? 
+#   - "Only one Signals block is allowed in a STIL file set; any other Siganl
+#     block  parsed is ignored. This is to facilitate the collection of 
+#     several separate STIL programs for a DUT into a complete test" - 1450 
+#     Section 14. "Signals block". To me, this means all other after the 
+#     the first are to be ignored. (tlbs["Signals"][0])
 class PatternExec(object): 
-    def __init__(self,name,timing="",patternBurst=""): 
+    def __init__(self,name,category="",selector="",
+                 timing="",patternBurst="",dcLevels="", dcSets=""): 
         self.name = name 
+        self.category = category
+        self.selector = selector
         self.timing = timing
         self.patternBurst = patternBurst
+        self.dcLevels = dcLevels # 1450.2
+        self.dcSets = dcSets     # 1450.2
 # ============================================================================:
 def build_PatternExec(tokens): 
     domain = funcs.references.GLOBAL_DOMAIN
@@ -152,8 +172,7 @@ def build_PatternExec(tokens):
         # EXIT----------------------------------------------------------------:
         if tokens[i]["token"] == "}": 
             cbs -= 1; 
-            if cbs == 0: 
-                break 
+            if cbs == 0: break 
         # --------------------------------------------------------------------:
         if tokens[i]["tag"] == "Timing": 
             if ((tokens[i+1]["tag"] != "identifier") or 
@@ -195,9 +214,14 @@ def read(sf,allow_fullbreak=True,debug=False):
     # ^^^ Much of this optmizations need to be verified, if employed, against
     #     many STILs and against the standard specifications. 
     tlbs = OrderedDict() 
+    tlbs["PatternExec"] = [] # TODO: Add other blocks ? 
+    tlbs["Signals"] = [] # TODO: Add other blocks ? 
+    tlbs["SignalGroups"] = [] # TODO: Add other blocks ? 
+    # ^^^^ NOTE: We are pre-loading some important blocks that we are 
+    # expecting to check regardless of what user configures .
     tlls = [] # To hold all starting line keys
     stilIndex = {1:sf} # NOTE: Include files will add to this. 
-    pass1Start = time.time()
+    ptS = time.time()
     fullbreak = False 
     for ln,line in funcs._read_line(sf): 
         if not line: continue 
@@ -209,15 +233,16 @@ def read(sf,allow_fullbreak=True,debug=False):
             if re.match("^%s\s|$|{"%(kw),line): 
                 domain = funcs.get_domain_name(line,kw)
                 if kw not in tlbs: tlbs[kw] = []
-                tlbs[kw].append({"line-count":ln, "source-file":1,"domain":domain})
+                tlbs[kw].append({"line-count":ln,
+                                 "source-file":1,"domain":domain})
                 tlls.append(int(ln))
                 #if kw == "Pattern": TLBs = set(["Pattern"]) # NOTE
                 if kw == "Pattern": 
                     if allow_fullbreak: fullbreak = True
                     else: TLBs = set(["Pattern"])
                 break
-    pass1End = time.time()
-    funcs.report_filesize_and_processing(pass1Start,pass1End,ln,sf,debug=debug)
+    ptE = time.time()
+    funcs.report_filesize_and_processing(ptS,ptE,ln,sf,debug=debug)
     # (1) first pass over
     for index, stil in stilIndex.items(): 
         print("%d.)  %s"%(index,stil))
@@ -230,59 +255,65 @@ def read(sf,allow_fullbreak=True,debug=False):
     # NOTE: at this point, we have grabbed all the top-level tags, However, 
     # there will be false top-level tags due to references within blocks to 
     # other blocks. In some stils, I see 
-
-   
     # -----------------------------------------------------------------------: 
     # TODO: Technically, there can be multiple PatternExec blocks per STIL. 
     # so we should not fail if more than one, also, we should be more careful
     # for removing instances based after  
-    if len(tlbs["PatternExec"]) > 1: 
-        raise RuntimeError("Found more than 1 PatternExec block")
-    lnPatternExec = tlbs["PatternExec"][0]["line-count"]
-    for kw, instances in tlbs.items(): 
-        if instances.__len__() > 1: 
-            #print("Multiple instances of %s"%(kw))
-            for i,instance in enumerate(instances): 
-                if instance["line-count"] > lnPatternExec: 
-                    #print("Not top-level instance: %s"%(instance))
-                    del tlls[tlls.index(instance["line-count"])]
-                    del tlbs[kw][i] # Remove instance
-    print("DEBUG: [%s]: Top-level-blocks, line instances:"%(func))
-    for kw,instances in tlbs.items(): # Debug show the new TLBs
-        print("DEBUG: [%s]: %s"%(func,kw))
-        for instance in instances: 
-            print("DEBUG: [%s]  - %s"%(func,instance))
-    print("DEBUG: [%s]: Top-level-lines: %s"%(func,tlls))
+    #if len(tlbs["PatternExec"]) > 1: 
+    #    raise RuntimeError("Found more than 1 PatternExec block")
+    if tlbs["PatternExec"].__len__() >= 1: 
+        lnPatternExec = tlbs["PatternExec"][0]["line-count"]
+        for kw, instances in tlbs.items(): 
+            if instances.__len__() > 1: 
+                #print("Multiple instances of %s"%(kw))
+                for i,instance in enumerate(instances): 
+                    if instance["line-count"] > lnPatternExec: 
+                        #print("Not top-level instance: %s"%(instance))
+                        del tlls[tlls.index(instance["line-count"])]
+                        del tlbs[kw][i] # Remove instance
+        print("DEBUG: [%s]: Top-level-blocks, line instances:"%(func))
+        for kw,instances in tlbs.items(): # Debug show the new TLBs
+            print("DEBUG: [%s]: %s"%(func,kw))
+            for instance in instances: 
+                print("DEBUG: [%s]  - %s"%(func,instance))
+        print("DEBUG: [%s]: Top-level-lines: %s"%(func,tlls))
     # -----------------------------------------------------------------------:
     # Parse the PatternExec block TODO: need lexer
-    lnEnd = tlls[tlls.index(lnPatternExec) + 1] - 1
-    pxlines = [line for ln,line in funcs._read_line_range(sf,lnPatternExec, lnEnd)]
-    pxtokens = funcs.lex(pxlines)
-    patternExec = build_PatternExec(pxtokens)
-    print(patternExec)
-    print(patternExec.name)
-    print(patternExec.timing)
-    print(patternExec.patternBurst)
+    if tlbs["PatternExec"].__len__() >= 1: 
+        lnS = tlbs["PatternExec"][0]["line-count"]
+        try:    lnE = tlls[tlls.index(lnS) + 1] - 1
+        except: lnE = 0
+        pxlines = [line for ln,line in funcs._read_line_range(sf,lnS, lnE)]
+        pxtokens = funcs.lex(pxlines)
+        patternExec = build_PatternExec(pxtokens)
+        print(patternExec)
+        print(patternExec.name)
+        print(patternExec.timing)
+        print(patternExec.patternBurst)
     # -----------------------------------------------------------------------:
     # Parse the Signals block
-    lnS = tlbs["Signals"][0]["line-count"]
-    lnE   = tlls[tlls.index(lnS) + 1] - 1
-    sglines = [line for ln,line in funcs._read_line_range(sf,lnS,lnE)]
-    sgtokens = funcs.lex(sglines)
-    signals = build_Signals(sgtokens)
-    #print(signals)
-    print(signals.name)
-    print(signals.__len__())
+    if tlbs["Signals"].__len__() >= 1: 
+        lnS = tlbs["Signals"][0]["line-count"]
+        try:    lnE = tlls[tlls.index(lnS) + 1] - 1
+        except: lnE = 0
+        sglines = [line for ln,line in funcs._read_line_range(sf,lnS,lnE)]
+        sgtokens = funcs.lex(sglines)
+        signals = build_Signals(sgtokens)
+        print(signals)
+        print(signals.name)
+        print(signals.__len__())
     # -----------------------------------------------------------------------:
     # Parse the SignalGroups
-    lnS = tlbs["SignalGroups"][0]["line-count"]
-    lnE   = tlls[tlls.index(lnS) + 1] - 1
-    sglines = [line for ln,line in funcs._read_line_range(sf,lnS,lnE)]
-    sgtokens = funcs.lex(sglines)
-    for tk in sgtokens: print(tk)
-    sg = build_SignalGroups(sgtokens)
-    print(sg.name)
-    for n,e in sg._expr.items(): print(n,e)
+    if tlbs["SignalGroups"].__len__() >= 1: 
+        lnS = tlbs["SignalGroups"][0]["line-count"]
+        try:    lnE = tlls[tlls.index(lnS) + 1] - 1
+        except: lnE = 0 
+        sglines = [line for ln,line in funcs._read_line_range(sf,lnS,lnE)]
+        sgtokens = funcs.lex(sglines)
+        for tk in sgtokens: print(tk)
+        sg = build_SignalGroups(sgtokens)
+        print(sg.name)
+        for n,e in sg._expr.items(): print(n,e)
     print("DEBUG: All first pass activities done")
     # ========================================================================:
     # (2) Second pass: 
