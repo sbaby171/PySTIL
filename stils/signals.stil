@@ -1,1 +1,7 @@
 STIL 1.0; 
+
+Signals {
+  A[0..7] InOut;
+  B[7..0] InOut; 
+  "a&b"[0..15] InOut; 
+} 
