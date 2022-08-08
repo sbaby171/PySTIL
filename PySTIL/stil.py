@@ -27,7 +27,13 @@ import funcs
 # ============================================================================:
 class STIL(object): 
     def __init__(self,*args,**kwargs): 
-        pass 
+        self.signals = None 
+        if "signals" in kwargs: self.signals = kwargs["signals"]
+        self.filepath = "" 
+        if "filepath" in kwargs: self.filepath = kwargs["filepath"]
+
+    def get_signals(self,): 
+        return self.signals 
 # ============================================================================:
 # Q: What is a valid syntax for a signal name: 
 # - SIG_NAME See 6.10 in 1450.0
@@ -37,10 +43,35 @@ class STIL(object):
 #   the values inside of the braket are interpreted as integer values only
 #   -> data[0] === data[00] != data00
 #   Ascending ([0..7]) or descending ([7..0]) are allowed. 
-class Signals(OrderedDict): 
+#class Signals(OrderedDict): 
+#    def __init__(self,name):
+#        super(Signals,self).__init__()
+#        self.name = name  
+#    def __setitem__(self,name,value): 
+#        self[name] = value
+class Signals(object): 
     def __init__(self,name):
-        super(Signals,self).__init__()
+        #super(Signals,self).__init__()
         self.name = name  
+        self._odict = OrderedDict()
+        self._expansion = {} 
+    def __setitem__(self,name,value): 
+        if ".." in name: 
+            bn = name.split("[")[0] # basename
+            num1 = int(name.split("..")[0].split("[")[-1])
+            num2 = int(name.split("..")[-1].split("]")[0])
+            if num1 > num2: low = num2; high = num1
+            else: high = num2; low = num1
+            names = ["%s[%d]"%(bn,j) for j in range(low,high+1)]
+            self._expansion[name] = set(names)
+        self._odict[name] = value
+    def __getitem__(self,name): 
+        return self._odict[name]
+    def __len__(self): 
+        length = len(self._odict) - len(self._expansion)
+        for e,names in self._expansion.items(): 
+            length += len(names)
+        return length
 # ============================================================================:
 def build_Signals(tokens): 
     func = "build_Signals"
@@ -73,6 +104,7 @@ def build_Signals(tokens):
                     stype = tokens[i+1]["tag"]
                     #print("DEBUG: [%s]: Adding Signal '%s'"%(func,sname))
                     SG[sname] = {"type":stype}  
+                    # add 
                     i += 3; continue 
                 else: raise RuntimeError("Bad")
             elif tokens[i+2]["tag"] == "{":
@@ -195,7 +227,7 @@ def read(sf,allow_fullbreak=True,debug=False):
     func = "PySTIL.stil.read"
     if not os.path.isfile(sf): 
         raise ValueError("Provide STIL file doesn't exist or has restrictive"\
-           "permissions: %s"%(sf))
+           " permissions: %s"%(sf))
     print("DEBUG: [%s]: Received: %s"%(func,sf))
     TLBs = list(funcs.references.TOP_LEVEL_KEYWORDS)
     # ========================================================================:
@@ -220,6 +252,7 @@ def read(sf,allow_fullbreak=True,debug=False):
     # ^^^^ NOTE: We are pre-loading some important blocks that we are 
     # expecting to check regardless of what user configures .
     tlls = [] # To hold all starting line keys
+    Stil = STIL()
     stilIndex = {1:sf} # NOTE: Include files will add to this. 
     ptS = time.time()
     fullbreak = False 
@@ -290,6 +323,7 @@ def read(sf,allow_fullbreak=True,debug=False):
         print(patternExec.name)
         print(patternExec.timing)
         print(patternExec.patternBurst)
+        Stil.patternExec = patternExec
     # -----------------------------------------------------------------------:
     # Parse the Signals block
     if tlbs["Signals"].__len__() >= 1: 
@@ -302,6 +336,7 @@ def read(sf,allow_fullbreak=True,debug=False):
         print(signals)
         print(signals.name)
         print(signals.__len__())
+        Stil.signals = signals 
     # -----------------------------------------------------------------------:
     # Parse the SignalGroups
     if tlbs["SignalGroups"].__len__() >= 1: 
@@ -314,6 +349,7 @@ def read(sf,allow_fullbreak=True,debug=False):
         sg = build_SignalGroups(sgtokens)
         print(sg.name)
         for n,e in sg._expr.items(): print(n,e)
+        Stil.signalGroups = sg
     print("DEBUG: All first pass activities done")
     # ========================================================================:
     # (2) Second pass: 
@@ -323,4 +359,5 @@ def read(sf,allow_fullbreak=True,debug=False):
     #        start = sb["line-count"]
     #        end   = tlls[tlls.index(start) + 1] 
     #        print(start,end)
+    return Stil
 # ----------------------------------------------------------------------------:
