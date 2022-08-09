@@ -1,6 +1,22 @@
 STIL 1.0; 
 Signals {
+  DIR In;
+  OE_ In; 
+  A0 In; A1 In; A2 In; 
+  A3 In; A4 In; A5 In; 
+  A6 In; A7 In; 
+
+  B0 In; B1 In; B2 In; 
+  B3 In; B4 In; B5 In; 
+  B6 In; B7 In; 
+
   A[0..7] InOut;
   B[7..0] InOut;
   "a&b"[0..15] InOut; 
+}
+
+SignalGroups {
+  ABUS = 'A0 + A1 + A2 + A3 + A4 + A5 + A6 + A7';
+  BBUS = 'B0 + B1 + B2 + B3 + B4 + B5 + B6 + B7';
+  ALL  = 'DIR + OE_ + ABUS + BBUS';
 }
