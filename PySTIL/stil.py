@@ -4,6 +4,11 @@ import time
 import re
 from collections import OrderedDict
 import funcs
+# TODO: Convert token tags from string to ints
+# "indentifier" = 1
+# "{" = 2, 3
+# + = 4, - 5,
+# ; 6, etc
 # ============================================================================:
 # Stages of Compiler: 
 # -PySTIL/compiler.py::PySTIL.compiler.read() 
@@ -25,15 +30,20 @@ import funcs
 #     references: Timing and PatternBurst
 # 
 # ============================================================================:
+# TODO: Clean up the STIL constructor
 class STIL(object): 
     def __init__(self,*args,**kwargs): 
         self.signals = None 
         if "signals" in kwargs: self.signals = kwargs["signals"]
         self.filepath = "" 
         if "filepath" in kwargs: self.filepath = kwargs["filepath"]
+        self.signalGroups = None 
+        if "signalGroups" in kwargs: self.signalGroup = kwargs["signalGroup"]
 
-    def get_signals(self,): 
+    def get_Signals(self,): 
         return self.signals 
+    def get_SignalGroups(self,): 
+        return self.signalGroups 
 # ============================================================================:
 # Q: What is a valid syntax for a signal name: 
 # - SIG_NAME See 6.10 in 1450.0
@@ -43,18 +53,11 @@ class STIL(object):
 #   the values inside of the braket are interpreted as integer values only
 #   -> data[0] === data[00] != data00
 #   Ascending ([0..7]) or descending ([7..0]) are allowed. 
-#class Signals(OrderedDict): 
-#    def __init__(self,name):
-#        super(Signals,self).__init__()
-#        self.name = name  
-#    def __setitem__(self,name,value): 
-#        self[name] = value
 class Signals(object): 
     def __init__(self,name):
-        #super(Signals,self).__init__()
         self.name = name  
-        self._odict = OrderedDict()
-        self._expansion = {} 
+        self._odict = OrderedDict() # signals as shown in stil
+        self._expansion = {}  # expanded signals within Signals shorthand
     def __setitem__(self,name,value): 
         if ".." in name: 
             bn = name.split("[")[0] # basename
@@ -72,6 +75,12 @@ class Signals(object):
         for e,names in self._expansion.items(): 
             length += len(names)
         return length
+    def __contains__(self,name): 
+        if name in self._odict: return True 
+        if name in self._expansion: return True
+        return False 
+    def get_signals(self,): 
+        return list(self._odict.keys())
 # ============================================================================:
 def build_Signals(tokens): 
     func = "build_Signals"
@@ -109,7 +118,11 @@ def build_Signals(tokens):
                 else: raise RuntimeError("Bad")
             elif tokens[i+2]["tag"] == "{":
                 print("TODO")
-            else: raise RuntimeError("bad")
+            else:
+                print("ERROR:     i = %s, %s"%(i,tokens[i]))
+                print("ERROR: 1 + i = %s, %s"%(i+1,tokens[i+1]))
+                print("ERROR: 2 + i = %s, %s"%(i+2,tokens[i+2]))
+                raise RuntimeError("bad")
         # --------------------------------------------------------------------:
         i+=1 
     return SG
@@ -120,10 +133,32 @@ class SignalGroups(object):
         self._dict = OrderedDict()
         self._expr = OrderedDict() # Holds raw expression for read
 
+    def __getitem__(self,name): 
+        if name in self._dict: return self._dict[name]
+        if name in self._expr: return self._expr[name]
+        raise KeyError("SignalGroup '%s' is not present"%(name))
+    
+    def __contains__(self,name): 
+        if name in self._dict: return True
+        if name in self._expr: return True
+        return False 
+
+    def add(self,name,signals): 
+        self._dict[name] = signals 
+
     def add_expr(self,name,expression):
         self._expr[name] = expression 
+
+    def get_signals(self,name): 
+        return self._dict[name]
+
+    def __len__(self,):
+        _s = set() 
+        for s in self._dict.keys(): _s.add(s) 
+        for s in self._expr.keys(): _s.add(s) 
+        return _s.__len__()
 # ============================================================================:
-def build_SignalGroups(tokens): 
+def build_SignalGroups(tokens, signals=None): 
     func = "build_SignalGroups"
     domain = funcs.references.GLOBAL_DOMAIN
     if tokens[0]["token"] != "SignalGroups": 
@@ -157,7 +192,42 @@ def build_SignalGroups(tokens):
                     n = tokens[i]["token"]
                     e = "".join([tokens[k]["token"] for k in range(i+2,j+1)])
                     print("DEBUG: [%s]: Adding: %s = %s"%(func,n,e))
-                    sg.add_expr(n,e)
+                    if not signals: 
+                        sg.add_expr(n,e)
+                    if signals:    
+                        add_ = [] 
+                        sub_ = [] 
+                        k = i + 2; kend = j
+                        while k <= kend: 
+                            if k == i+2: 
+                                if tokens[k]['tag'] == "\'":
+                                    if tokens[k+1]['tag'] == "identifier": 
+                                        idn = tokens[k+1]['token']
+                                        if   idn in signals: add_.append(idn) 
+                                        elif idn in sg:      add_.extend(sg.get_signals(idn))
+                                        else: raise RuntimeError("bad")
+                                        k+=1 
+                                        continue 
+                                else: 
+                                    print("ERROR:     k = %s, %s"%(k,tokens[k]))
+                                    print("ERROR: 1 + k = %s, %s"%(k+1,tokens[k+1]))
+                                    raise RuntimeError("bad")
+                            if tokens[k]['tag'] == "+": 
+                                if tokens[k+1]['tag'] == "identifier": 
+                                    idn = tokens[k+1]['token']
+                                    if   idn in signals: add_.append(idn) 
+                                    elif idn in sg:      add_.extend(sg.get_signals(idn))
+                                    else: 
+                                        print("ERROR:     k = %s, %s"%(k,tokens[k]))
+                                        print("ERROR: 1 + k = %s, %s"%(k+1,tokens[k+1]))
+                                        print(sg.__dict__)
+                                        print(idn)
+                                        raise RuntimeError("bad")
+                                    k+=2 
+                                    continue 
+                            k+=1
+                        # while-done
+                        sg.add(n,add_) 
                     i = j; break
                 j += 1
                 if j == end:raise RuntimeError("bad")
@@ -326,6 +396,7 @@ def read(sf,allow_fullbreak=True,debug=False):
         Stil.patternExec = patternExec
     # -----------------------------------------------------------------------:
     # Parse the Signals block
+    signals = None 
     if tlbs["Signals"].__len__() >= 1: 
         lnS = tlbs["Signals"][0]["line-count"]
         try:    lnE = tlls[tlls.index(lnS) + 1] - 1
@@ -346,7 +417,10 @@ def read(sf,allow_fullbreak=True,debug=False):
         sglines = [line for ln,line in funcs._read_line_range(sf,lnS,lnE)]
         sgtokens = funcs.lex(sglines)
         for tk in sgtokens: print(tk)
-        sg = build_SignalGroups(sgtokens)
+        if signals:  
+            sg = build_SignalGroups(sgtokens,signals)
+        else: 
+            sg = build_SignalGroups(sgtokens)
         print(sg.name)
         for n,e in sg._expr.items(): print(n,e)
         Stil.signalGroups = sg
