@@ -12,22 +12,16 @@ class TestSignalsAndSignalGroups(unittest.TestCase):
         failed = False
         msg = []
         # --------------------------------------------------------------------:
-        signals = stil.get_signals() 
-        if len(signals) != 32:  
+        signals = stil.get_Signals() 
+        if len(signals) != 50:  
             failed = True
-            msg.append("Num-of-signals should be 32. Found %s"%(len(signals)))
-        #if len(signals.get_names()) != 9: 
-        #    failed = True
-        #    msg.append("The number of names returned should be 9.")
-        #if len(signals.get_names(regex="D\d")) != 2: 
-        #    failed = True
-        #    msg.append("The number of names returned from regex 'D\d' should be 2.")
-        #if len(signals.get_names(types=['Out'])) != 2: 
-        #    failed = True
-        #    msg.append("The number of names returned from types should be 2.")
-        #if len(signals.get_names(regex="S0", types=['In'])) != 1: 
-        #    failed = True
-        #    msg.append("The number of names returned from rege='S0' and types=['In'] should be 1.")
+            msg.append("Num-of-signals should be 50. Found %s"%(len(signals)))
+        # --------------------------------------------------------------------:
+        signalGroups = stil.get_SignalGroups()
+        if len(signalGroups) != 3: 
+            failed = True
+            msg.append("Num-of-signalsGroups should be 3. Found %s"%(len(signalGroups)))
+
         self.assertTrue(failed == False, "\n".join(msg))
 if __name__ == "__main__": 
     unittest.main()
